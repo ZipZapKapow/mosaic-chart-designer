@@ -1,4 +1,5 @@
 import {
+  chartColumns,
   designWidth,
   inRepeat,
   layoutOf,
@@ -6,13 +7,14 @@ import {
   LETTERS,
   sectionStack,
   shownColour,
-  type Layout,
+  type ChartCol,
+  type ChartMode,
   type Project,
   type Section,
   type StackRow,
 } from "../mosaic";
 
-export type ChartMode = "repeat" | "full";
+export type { ChartMode };
 
 /** What a pointer is over in the chart. `row` is the section row (0 = row 1). */
 export type CellTarget = { kind: "bs" } | { kind: "foundation" } | { kind: "stitch"; row: number; stitch: number };
@@ -25,7 +27,7 @@ export interface ChartHandlers {
   onChip(target: ChipTarget, anchor: HTMLElement): void;
 }
 
-type Col = { kind: "bs" } | { kind: "stitch"; stitch: number; head: string };
+type Col = ChartCol;
 
 interface Cell {
   td: HTMLTableCellElement;
@@ -92,7 +94,7 @@ export class Chart {
     this.stack = sectionStack(project, section, opts.withFoundation);
     this.cells.clear();
 
-    const cols = columns(layout, mode);
+    const cols = chartColumns(layout, mode);
     const stitchCols = cols.filter((c): c is Extract<Col, { kind: "stitch" }> => c.kind === "stitch");
     const boxed = (s: number) => section.repeatWidth !== null && inRepeat(layout, s) && (mode === "full" || s < layout.first + layout.motifWidth);
     const boxIdx = stitchCols.map((c, i) => (boxed(c.stitch) ? i : -1)).filter((i) => i >= 0);
@@ -244,22 +246,4 @@ export class Chart {
     td.classList.add("flash");
     td.addEventListener("animationend", () => td.classList.remove("flash"), { once: true });
   }
-}
-
-/** Display columns, left to right: BS, stitches from the highest number down to 1, BS. */
-function columns(layout: Layout, mode: ChartMode): Col[] {
-  const cols: Col[] = [{ kind: "bs" }];
-  const { width, first, motifWidth, repeats } = layout;
-  if (mode === "full") {
-    for (let s = width - 1; s >= 0; s--) {
-      const n = s + 1;
-      cols.push({ kind: "stitch", stitch: s, head: n % 5 === 0 || n === 1 ? String(n) : "" });
-    }
-  } else {
-    for (let s = width - 1; s >= first + repeats * motifWidth; s--) cols.push({ kind: "stitch", stitch: s, head: "LS" });
-    for (let s = first + motifWidth - 1; s >= first; s--) cols.push({ kind: "stitch", stitch: s, head: String(s - first + 1) });
-    for (let s = first - 1; s >= 0; s--) cols.push({ kind: "stitch", stitch: s, head: "FS" });
-  }
-  cols.push({ kind: "bs" });
-  return cols;
 }

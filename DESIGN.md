@@ -49,10 +49,12 @@ One engine turns a target picture into X's:
 
 ## PDF
 
+- A4, made in the browser with pdf-lib (loaded only when needed); standard fonts, so unusual characters in names show as "?".
 - Full design image, colour key, legend, starting instructions.
 - Section checklist (top-down, with tick boxes).
 - One chart per section: red repeat box, stitch numbers along the top and bottom, row numbers on both sides, colour letter and tick box on the right.
-- Tall sections split across pages, with a few rows of overlap.
+- Tall sections split across pages; each continued page repeats the previous page's top 2 rows, faded, with shared tick boxes.
+- Charts appear in the order sections are first worked; sections not in the arrangement are left out. The checklist links to each chart, and each chart links back.
 - Tick boxes tappable as well as markable by hand. Written instructions: optional.
 
 ## Build order

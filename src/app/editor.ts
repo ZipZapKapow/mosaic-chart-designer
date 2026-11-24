@@ -638,17 +638,45 @@ export function startEditor() {
   }, () => store.entries.length);
   $("newProjBtn").addEventListener("click", newProject.open);
 
-  $("downloadBtn").addEventListener("click", () => {
-    store.flush();
-    const blob = new Blob([serialiseProject(store.project)], { type: "application/json" });
+  function saveBlob(blob: Blob, name: string) {
     const url = URL.createObjectURL(blob);
     const a = el("a");
     a.href = url;
-    a.download = fileNameFor(store.project);
+    a.download = name;
     document.body.append(a);
     a.click();
     a.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  $("downloadBtn").addEventListener("click", () => {
+    store.flush();
+    saveBlob(new Blob([serialiseProject(store.project)], { type: "application/json" }), fileNameFor(store.project));
+  });
+
+  const pdfBtn = $<HTMLButtonElement>("pdfBtn");
+  pdfBtn.addEventListener("click", async () => {
+    const project = store.project;
+    if (!project.arrangement.length) return notify("Add a section to the arrangement first: the PDF follows the arrangement.");
+    pdfBtn.disabled = true;
+    pdfBtn.textContent = "Making PDF…";
+    try {
+      // The PDF code is loaded only when it's needed.
+      const { buildPdf } = await import("../pdf/pdf");
+      const bytes = await buildPdf(project);
+      saveBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }), fileNameFor(project).replace(/\.mosaic\.json$/, ".pdf"));
+      const unused = project.sections.filter((s) => !project.arrangement.includes(s.id)).length;
+      notify(
+        "PDF downloaded. Open it in a PDF app to tap the tick boxes." +
+          (unused ? ` ${unused} section${unused === 1 ? " isn't" : "s aren't"} in the arrangement, so ${unused === 1 ? "it's" : "they're"} left out.` : ""),
+        "info",
+      );
+    } catch (err) {
+      notify(`Couldn't make the PDF${err instanceof Error ? `: ${err.message}` : "."}`);
+    } finally {
+      pdfBtn.disabled = false;
+      pdfBtn.textContent = "Download PDF";
+    }
   });
 
   const fileInput = $<HTMLInputElement>("fileInput");

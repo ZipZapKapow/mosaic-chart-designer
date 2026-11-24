@@ -8,3 +8,4 @@ export * from "./file";
 export { exampleProject } from "./example";
 export * from "./picture";
 export * from "./image";
+export * from "./columns";
