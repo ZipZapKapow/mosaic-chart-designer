@@ -2,24 +2,169 @@
 <html lang="en-GB">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Mosaic Chart Designer</title>
-    <style>
-      :root { --bg: #f3f5f3; --ink: #1d2421; --muted: #5b6661; color-scheme: light dark; }
-      @media (prefers-color-scheme: dark) { :root { --bg: #141816; --ink: #e6ebe8; --muted: #9da8a2; } }
-      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
-      main { max-width: 640px; margin: 0 auto; padding: 48px 16px; display: flex; flex-direction: column; gap: 16px; }
-      h1 { margin: 0; font-size: 26px; }
-      p { margin: 0; color: var(--muted); }
-      canvas { image-rendering: pixelated; width: 100%; max-width: 450px; height: auto; border-radius: 4px; }
-    </style>
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <main>
-      <h1>Mosaic Chart Designer</h1>
-      <p>Coming soon: a tool for designing overlay mosaic crochet charts. Below is the example design, drawn by the app's mosaic rules.</p>
-      <canvas id="preview" aria-label="Example mosaic design"></canvas>
-    </main>
+    <header class="topbar wrap">
+      <div class="brand"><h1>Mosaic Chart Designer</h1></div>
+      <div class="projsel">
+        <select id="projSelect" aria-label="Open a saved project"></select>
+        <button class="btn" id="newProjBtn" type="button">+ New project</button>
+      </div>
+      <div class="top-actions">
+        <span class="save-state" id="saveState" role="status" aria-live="polite"></span>
+        <button class="btn" id="openFileBtn" type="button" title="Open a project file (.mosaic.json)">Open file…</button>
+        <button class="btn" id="downloadBtn" type="button" title="Download this project as a file, as a back-up or to move it to another device">Download file</button>
+        <input type="file" id="fileInput" accept=".json,application/json" hidden />
+      </div>
+    </header>
+
+    <div id="editorView" class="app wrap">
+      <aside class="side">
+        <section class="card whole">
+          <div class="card-head"><h2>Whole design</h2><span class="hint" id="wholeMeta"></span></div>
+          <div class="whole-scroll" id="wholeScroll"><canvas id="wholeCanvas" aria-label="Preview of the whole arranged design. Click a row to open its section."></canvas></div>
+          <p class="hint">Click the preview to open the section at that point.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Sections</h2><button class="btn small" id="addSection" type="button">+ New section</button></div>
+          <div class="sec-list" id="secList"></div>
+        </section>
+
+        <section class="card">
+          <h2>Arrangement (order you work them)</h2>
+          <p class="hint">Read from the bottom up, like the fabric: step 1 is worked first. Drag ⋮⋮ or use ↑ ↓ to reorder.</p>
+          <div class="arr-add"><select id="arrSelect" aria-label="Section to add"></select><button class="btn small" id="arrAdd" type="button">Add on top</button></div>
+          <ol class="arr-list" id="arrList" aria-label="Arrangement steps, first worked at the bottom"></ol>
+          <div id="joins" class="joins" role="status"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Yarn colours</h2><button class="btn small" id="addColour" type="button">+ Colour</button></div>
+          <div class="pal" id="palList"></div>
+        </section>
+
+        <section class="card">
+          <h2>Project</h2>
+          <div class="field"><label for="projName">Project name</label><input type="text" id="projName" class="wide" /></div>
+          <div class="field"><label for="widthInput">Stitches per row</label><input type="number" id="widthInput" min="8" max="400" /></div>
+          <p class="hint" id="chainInfo"></p>
+          <p class="hint">Saved automatically in this browser. Use <b>Download file</b> now and then as a back-up: clearing your browser data would delete it.</p>
+          <button class="btn small danger" id="deleteProjBtn" type="button">Delete project…</button>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="sec-head">
+          <div>
+            <h2 id="secTitle"></h2>
+            <div class="sum" id="secSum"></div>
+          </div>
+          <div class="seg" role="group" aria-label="Chart view" id="viewSeg">
+            <button type="button" id="viewRepeat" aria-pressed="true">One repeat</button>
+            <button type="button" id="viewFull" aria-pressed="false">Full width</button>
+          </div>
+        </div>
+
+        <div class="settings">
+          <div class="field"><label for="secName">Section name</label><input type="text" id="secName" /></div>
+          <div class="field"><label for="motifInput">Repeat width</label>
+            <div class="inline"><input type="number" id="motifInput" min="1" max="398" /><label class="chk"><input type="checkbox" id="noRepeat" /> No repeat</label></div>
+          </div>
+          <div class="field" id="fillField"><span class="lbl">Spare stitches</span>
+            <div class="seg" role="group" aria-label="Spare stitches">
+              <button type="button" id="fillContinue">Continue motif</button>
+              <button type="button" id="fillPlain">Plain</button>
+            </div>
+          </div>
+          <div class="field" id="sideField"><span class="lbl">Odd spare stitch goes</span>
+            <div class="seg" role="group" aria-label="Side for the odd spare stitch">
+              <button type="button" id="sideLeft">Left (LS)</button>
+              <button type="button" id="sideRight">Right (FS)</button>
+            </div>
+          </div>
+          <div class="field"><label for="rowsInput">Rows</label>
+            <div class="inline"><input type="number" id="rowsInput" min="2" max="2000" /><button class="btn small" id="rowAdd" type="button" title="Add a plain row on top">+ Row</button><button class="btn small" id="rowDel" type="button" title="Remove the top row">− Row</button></div>
+          </div>
+          <div class="field"><span class="lbl">Row colour sequence</span>
+            <div class="inline" id="seqBox"></div>
+          </div>
+        </div>
+
+        <div id="centreNote" class="centre-note" hidden></div>
+
+        <div class="toolbar">
+          <button class="btn" id="undoBtn" type="button" title="Undo (⌘Z)">↶ Undo</button>
+          <button class="btn" id="redoBtn" type="button" title="Redo (⇧⌘Z)">↷ Redo</button>
+          <span class="sep"></span>
+          <button class="btn" id="mirrorBtn" type="button" title="Copy the right half of the pattern onto the left, flipped">⇋ Mirror right half to left</button>
+          <button class="btn" id="clearBtn" type="button">Clear all X's</button>
+          <button class="btn" id="delSection" type="button">Delete section</button>
+          <span class="sep"></span>
+          <button class="btn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+          <button class="btn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+          <span class="hint">Click a stitch to add or remove an X; drag to do several. Click a row's colour letter to change it.</span>
+        </div>
+
+        <div id="notice" class="notice info" role="status" aria-live="polite" hidden></div>
+
+        <div class="chart-scroll" id="chartScroll"></div>
+      </main>
+    </div>
+
+    <div id="popover" class="popover" hidden role="menu"></div>
+
+    <div id="newDlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="newTitle">
+      <form class="sheet" id="newForm" novalidate>
+        <h2 id="newTitle">New project</h2>
+        <p class="hint">Set up the basics. You can change all of this later, and add more colours and sections in the editor.</p>
+        <div class="field"><label for="npName">Project name</label><input type="text" id="npName" class="wide" /></div>
+
+        <fieldset>
+          <legend>Yarn colours</legend>
+          <div class="pal-row"><span class="letter">A</span><input type="color" id="npHexA" value="#EFE8D8" aria-label="Colour A" /><input type="text" id="npNameA" value="Cream" aria-label="Name of colour A" /></div>
+          <div class="pal-row"><span class="letter">B</span><input type="color" id="npHexB" value="#2F5F78" aria-label="Colour B" /><input type="text" id="npNameB" value="Teal" aria-label="Name of colour B" /></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Width</legend>
+          <div class="seg" role="group" aria-label="Set the width by">
+            <button type="button" id="npModeTotal" aria-pressed="true">Total stitches</button>
+            <button type="button" id="npModeRep" aria-pressed="false">Repeats</button>
+          </div>
+          <div class="row3" id="npTotalBox">
+            <div class="field"><label for="npTotal">Stitches per row</label><input type="number" id="npTotal" value="60" min="8" max="400" /></div>
+            <div class="field"><label for="npStart">Pattern 1 starts as</label><select id="npStart"><option value="free">No repeat</option><option value="rep">A repeat</option></select></div>
+            <div class="field" id="npTRepField" hidden><label for="npTRep">Repeat width</label><input type="number" id="npTRep" value="12" min="1" max="398" /></div>
+          </div>
+          <div class="row3" id="npRepBox" hidden>
+            <div class="field"><label for="npW">Repeat width</label><input type="number" id="npW" value="12" min="1" max="398" /></div>
+            <div class="field"><label for="npN">Repeats across</label><input type="number" id="npN" value="5" min="1" max="200" /></div>
+            <div class="field"><label for="npX">Spare stitches</label><input type="number" id="npX" value="1" min="0" max="200" /></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Rows</legend>
+          <div class="row3">
+            <div class="field"><label for="npRows">Rows in Pattern 1</label><input type="number" id="npRows" value="20" min="2" max="2000" /></div>
+            <div class="field"><label for="npFirst">Row 1 colour</label><select id="npFirst"><option value="0">A</option><option value="1">B</option></select></div>
+            <div class="field"><label for="npFR">Foundation rows</label><select id="npFR"><option>1</option><option selected>2</option><option>3</option></select></div>
+          </div>
+        </fieldset>
+
+        <div class="sum" id="npSum" aria-live="polite"></div>
+
+        <div class="actions">
+          <button class="btn" type="button" id="npCancel">Cancel</button>
+          <button class="btn primary" type="submit">Create project</button>
+        </div>
+      </form>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

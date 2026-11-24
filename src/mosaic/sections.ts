@@ -115,3 +115,30 @@ export function mirrorRightToLeft(section: Section): Section {
   });
   return { ...section, rows };
 }
+
+/** Change one row's colour by hand (it then differs from the sequence). */
+export function setRowColour(section: Section, row: number, colour: ColourIndex): Section {
+  if (!section.rows[row] || section.rows[row]!.colour === colour) return section;
+  return { ...section, rows: section.rows.map((r, i) => (i === row ? { ...r, colour } : r)) };
+}
+
+/** Remove every X in the section. */
+export function clearAllX(section: Section): Section {
+  if (section.rows.every((r) => !r.x.includes(true))) return section;
+  return { ...section, rows: section.rows.map((r) => ({ ...r, x: r.x.map(() => false) })) };
+}
+
+export const MIN_ROWS = 2;
+export const MAX_ROWS = 2000;
+
+/** Set the number of rows: new plain rows are added on top, or rows are removed from the top. */
+export function setRowCount(section: Section, count: number, width: number): Section {
+  const n = Math.max(MIN_ROWS, Math.min(MAX_ROWS, Math.round(count)));
+  if (n === section.rows.length) return section;
+  if (n < section.rows.length) return { ...section, rows: section.rows.slice(0, n) };
+  const columns = columnsOf(section, width);
+  const extra = Array.from({ length: n - section.rows.length }, (_, k) =>
+    blankRow(sequenceColour(section.colourSequence, section.rows.length + k), columns),
+  );
+  return { ...section, rows: [...section.rows, ...extra] };
+}
