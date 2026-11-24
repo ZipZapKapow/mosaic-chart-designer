@@ -1,4 +1,5 @@
 import { designWidth } from "./layout";
+import { flippedSection } from "./picture";
 import { fitToWidth, newSection } from "./sections";
 import type { Problem, StackRow } from "./stack";
 import type { ColourIndex, Project, Section, Yarn } from "./types";
@@ -98,6 +99,27 @@ export function addSection(project: Project): { project: Project; id: string } {
     sequence,
   });
   return { project: { ...project, sections: [...project.sections, section] }, id };
+}
+
+/**
+ * Add an upside-down copy of a section on top of the arrangement. `rotate` turns it
+ * round 180° (for the far end of a scarf); otherwise it's flipped top to bottom only.
+ * `misses` are the stitches of the copy (row, stored column) that can't match.
+ */
+export function addFlippedCopy(project: Project, sectionId: string, rotate: boolean) {
+  const source = project.sections.find((s) => s.id === sectionId);
+  if (!source) throw new Error(`No section ${sectionId}`);
+  const id = nextSectionId(project);
+  const used = new Set(project.sections.map((s) => s.name));
+  const base = `${source.name} (${rotate ? "upside down" : "flipped"})`;
+  let name = base;
+  for (let n = 2; used.has(name); n++) name = `${base} ${n}`;
+  const { section, misses } = flippedSection(source, designWidth(project), { id, name, rotate });
+  return {
+    project: { ...project, sections: [...project.sections, section], arrangement: [...project.arrangement, id] },
+    id,
+    misses,
+  };
 }
 
 /** Delete a section and its steps in the arrangement. A project keeps at least one section. */

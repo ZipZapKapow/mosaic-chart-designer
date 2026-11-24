@@ -37,10 +37,10 @@ A browser app for designing **overlay mosaic crochet** charts and exporting them
 
 One engine turns a target picture into X's:
 
-- Works row by row; a stitch can only show a different colour by taking the colour of the row above.
-- Shapes must start and end on a row of their own colour. Auto-fix nudges edges by one row (thin or thicken); stitches that still can't be made are shown in red.
+- A stitch shows its own row's colour, or the row above's when that row has an X there.
+- Shapes must start and end on a row of their own colour. Each column is solved exactly: fewest wrong stitches, then fewest X's; where a stitch can't match, *thin* or *thicken* decides which way it gives. Stitches that still can't be made are outlined in red.
 - **Image import:** PNG/JPG/WebP (no vectors needed); fit to width; optional 90° turn; threshold to the palette; *fill letter bodies* for outline-style lettering.
-- **Duplicate flipped:** an upside-down copy of a section, recalculated with the same engine (X's only drop downwards, so reversing rows isn't enough).
+- **Duplicate flipped:** an upside-down copy of a section, recalculated with the same engine (X's only drop downwards, so reversing rows isn't enough). *Turn upside down* rotates 180° (also swapping the odd spare stitch side); *flip* mirrors top to bottom only.
 - Later: paint mode (paint the colours, the app places the X's).
 
 ## Saving

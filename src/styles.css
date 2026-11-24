@@ -163,9 +163,11 @@ table.chart .c.rb-r { --br: 3px; }
 table.chart .c.rb-t { --bt: 3px; }
 table.chart .c.rb-b { --bb: 3px; }
 table.chart .c.rb-d { --bd: 1px; }
+table.chart .c.miss { outline: 2px solid #ff1f3d; outline-offset: -2px; }
 table.chart .c.flash { animation: flash 0.9s ease; }
 @keyframes flash { 0%, 70% { outline: 3px solid var(--repeat); outline-offset: -3px; } 100% { outline: 0 solid transparent; } }
-@media (prefers-reduced-motion: reduce) { table.chart .c.flash { animation-duration: 0.01s; } .arr-row.moved { animation: none; } }
+@media (prefers-reduced-motion: reduce) { table.chart .c.miss { outline: 2px solid #ff1f3d; outline-offset: -2px; }
+table.chart .c.flash { animation-duration: 0.01s; } .arr-row.moved { animation: none; } }
 table.chart .rn { width: 34px; min-width: 34px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); background: var(--panel); font-variant-numeric: tabular-nums; }
 table.chart .hdr { font-size: 10px; color: var(--muted); height: 20px; border: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
 table.chart .hdr.corner { border: none; background: none; }

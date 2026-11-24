@@ -6,3 +6,4 @@ export * from "./sections";
 export * from "./project";
 export * from "./file";
 export { exampleProject } from "./example";
+export * from "./picture";

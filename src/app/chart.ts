@@ -2,6 +2,7 @@ import {
   designWidth,
   inRepeat,
   layoutOf,
+  motifColumn,
   LETTERS,
   sectionStack,
   shownColour,
@@ -216,6 +217,22 @@ export class Chart {
     const k = row + this.offset;
     this.paintRow(k);
     if (k > 0) this.paintRow(k - 1);
+  }
+
+  /**
+   * Outline in red the stitches that can't show the colour they should.
+   * `misses` holds "row:column" keys in the section's stored columns.
+   */
+  markMisses(project: Project, section: Section, misses: Set<string>) {
+    const layout = layoutOf(section, designWidth(project));
+    for (const [k, cells] of this.cells) {
+      const src = this.stack[k]?.source;
+      if (src?.kind !== "section") continue;
+      for (const cell of cells) {
+        const col = motifColumn(section, layout, cell.stitch);
+        if (col !== null && misses.has(`${src.row}:${col}`)) cell.td.classList.add("miss");
+      }
+    }
   }
 
   /** Briefly outline a stitch (e.g. the X that's in the way). */

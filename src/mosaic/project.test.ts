@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addColour,
+  addFlippedCopy,
   addSection,
   addStep,
   clearAllX,
@@ -112,6 +113,16 @@ describe("project edits", () => {
     expect(removeStep(p, 1).arrangement).toEqual(["diamond", "diamond", "zigzag", "diamond"]);
     const single = { ...p, arrangement: ["diamond"] };
     expect(removeStep(single, 0)).toBe(single);
+  });
+
+  it("adds a flipped copy on top of the arrangement with a unique name", () => {
+    const a = addFlippedCopy(exampleProject(), "diamond", true);
+    const copy = a.project.sections.at(-1)!;
+    expect(copy.name).toBe("Pattern 1 (upside down)");
+    expect(a.project.arrangement.at(-1)).toBe(a.id);
+    const b = addFlippedCopy(a.project, "diamond", true);
+    expect(b.project.sections.at(-1)!.name).toBe("Pattern 1 (upside down) 2");
+    expect(addFlippedCopy(exampleProject(), "zigzag", false).project.sections.at(-1)!.name).toBe("Pattern 2 (flipped)");
   });
 
   it("adds colours up to the limit, without repeating names", () => {

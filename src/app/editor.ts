@@ -1,5 +1,6 @@
 import {
   addColour,
+  addFlippedCopy,
   addRowOnTop,
   addSection,
   addStep,
@@ -54,6 +55,8 @@ export function startEditor() {
   let selected = store.project.arrangement[0] ?? store.project.sections[0]!.id;
   let lastChartKey = "";
   let movedStep: number | null = null;
+  /** Stitches a flipped copy couldn't make, shown in red until that section is changed. */
+  let missMarks: { section: Section; keys: Set<string> } | null = null;
 
   const current = (): Section => {
     const p = store.project;
@@ -177,6 +180,8 @@ export function startEditor() {
 
     const cell = prefs.view === "full" || s.repeatWidth === null ? Math.max(ZOOM_MIN, Math.round(prefs.zoom * 0.75)) : prefs.zoom;
     chart.render(p, s, { mode: prefs.view, cell, withFoundation: p.arrangement[0] === s.id });
+    if (missMarks && missMarks.section !== s && !p.sections.includes(missMarks.section)) missMarks = null;
+    if (missMarks?.section === s) chart.markMisses(p, s, missMarks.keys);
     // A different section (or project) starts scrolled to row 1, at the bottom.
     const key = `${store.id}:${s.id}`;
     if (key !== lastChartKey) {
@@ -459,6 +464,30 @@ export function startEditor() {
     updateSection(mirrorRightToLeft(s));
     notify(`Mirrored: stitches ${Math.ceil(w / 2) + 1}–${w} now copy stitches 1–${Math.floor(w / 2)} in reverse.`, "info");
   });
+  $("flipBtn").addEventListener("click", (e) => {
+    const s = current();
+    openMenu(e.currentTarget as HTMLElement, "Duplicate flipped", [
+      { label: "Turn upside down (rotate 180°)", onPick: () => duplicateFlipped(s.id, true) },
+      { label: "Flip top to bottom only (mirror image)", onPick: () => duplicateFlipped(s.id, false) },
+    ]);
+  });
+
+  function duplicateFlipped(id: string, rotate: boolean) {
+    const res = addFlippedCopy(store.project, id, rotate);
+    selected = res.id;
+    const copy = res.project.sections.find((s) => s.id === res.id)!;
+    missMarks = res.misses.length ? { section: copy, keys: new Set(res.misses.map((m) => `${m.row}:${m.col}`)) } : null;
+    store.set(res.project);
+    const where = `Added ${copy.name} on top of the arrangement.`;
+    if (!res.misses.length) return notify(`${where} Its X's were worked out again, and every stitch matches the original.`, "info");
+    const rows = [...new Set(res.misses.map((m) => m.row + 1))].sort((a, b) => a - b);
+    notify(
+      `${where} ${res.misses.length} stitch${res.misses.length === 1 ? "" : "es"} on row${rows.length === 1 ? "" : "s"} ${rows.join(", ")} can't match and ${res.misses.length === 1 ? "is" : "are"} outlined in red. ` +
+        "This usually happens where the original's bottom row took its colour from an X above: turned over, that row has nothing above it. Edit them by hand, or ignore them if the next section covers it.",
+      "info",
+    );
+  }
+
   $("clearBtn").addEventListener("click", () => updateSection(clearAllX(current())));
   $("delSection").addEventListener("click", () => {
     const p = store.project;
