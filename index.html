@@ -102,6 +102,7 @@
           <span class="sep"></span>
           <button class="btn" id="mirrorBtn" type="button" title="Copy the right half of the pattern onto the left, flipped">⇋ Mirror right half to left</button>
           <button class="btn" id="flipBtn" type="button" title="Add an upside-down copy of this section, with its X's worked out again">⇅ Duplicate flipped</button>
+          <button class="btn" id="importBtn" type="button" title="Make a new section from a picture, such as a logo or lettering">▦ Import picture…</button>
           <button class="btn" id="clearBtn" type="button">Clear all X's</button>
           <button class="btn" id="delSection" type="button">Delete section</button>
           <span class="sep"></span>
@@ -162,6 +163,79 @@
         <div class="actions">
           <button class="btn" type="button" id="npCancel">Cancel</button>
           <button class="btn primary" type="submit">Create project</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="imgDlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="imgTitle">
+      <form class="sheet wide-sheet" id="imgForm" novalidate>
+        <h2 id="imgTitle">Import picture</h2>
+        <p class="hint">Turn a picture into a new no-repeat section. Simple, high-contrast pictures work best. The picture stays on your device: nothing is uploaded.</p>
+        <div class="inline">
+          <button class="btn" type="button" id="imgChoose">Choose picture…</button>
+          <span class="hint" id="imgFileName">PNG, JPG or WebP</span>
+          <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" hidden />
+        </div>
+
+        <div id="imgBody" hidden>
+          <div class="img-grid">
+            <div class="img-opts">
+              <fieldset>
+                <legend>Colours</legend>
+                <div class="row3">
+                  <div class="field"><label for="imgC1">Row 1</label><select id="imgC1"></select></div>
+                  <div class="field"><label for="imgC2">Row 2</label><select id="imgC2"></select></div>
+                  <div class="field"><label for="imgPic">Picture in</label><select id="imgPic"></select></div>
+                </div>
+                <div class="field"><label for="imgThreshold">Dark enough to be picture: <span id="imgThresholdVal"></span></label>
+                  <input type="range" id="imgThreshold" min="1" max="255" />
+                </div>
+                <label class="chk"><input type="checkbox" id="imgSwap" /> Light parts are the picture</label>
+                <label class="chk"><input type="checkbox" id="imgFill" /> Fill letter bodies <span class="hint">(for outlined lettering)</span></label>
+              </fieldset>
+
+              <fieldset>
+                <legend>Size and position</legend>
+                <div class="field"><label for="imgTurn">Turn</label>
+                  <select id="imgTurn">
+                    <option value="0">Not turned</option>
+                    <option value="90">90° clockwise</option>
+                    <option value="270">90° anticlockwise</option>
+                    <option value="180">Upside down</option>
+                  </select>
+                </div>
+                <div class="row3">
+                  <div class="field"><label for="imgW">Width (stitches)</label><input type="number" id="imgW" min="1" /></div>
+                  <div class="field"><label for="imgH">Height (rows)</label><input type="number" id="imgH" min="1" max="2000" /></div>
+                  <div class="field"><label for="imgMargin">Plain rows above and below</label><input type="number" id="imgMargin" min="0" max="100" value="2" /></div>
+                </div>
+                <label class="chk"><input type="checkbox" id="imgKeep" checked /> Keep proportions <span class="hint">(as if stitches were square)</span></label>
+              </fieldset>
+
+              <fieldset>
+                <legend>Where a stitch can't match</legend>
+                <div class="seg" role="group" aria-label="Where a stitch can't match">
+                  <button type="button" id="imgThicken" aria-pressed="true">Thicken the picture</button>
+                  <button type="button" id="imgThin" aria-pressed="false">Thin the picture</button>
+                </div>
+                <p class="hint">Shapes have to start and end on rows of their own colour, so a stitch at some edges has to give.</p>
+              </fieldset>
+
+              <div class="field"><label for="imgName">Section name</label><input type="text" id="imgName" class="wide" /></div>
+            </div>
+
+            <div class="img-previews">
+              <figure><figcaption>Picture</figcaption><div class="img-scroll"><canvas id="imgTarget" aria-label="The picture at one square per stitch"></canvas></div></figure>
+              <figure><figcaption>Chart</figcaption><div class="img-scroll"><canvas id="imgResult" aria-label="What the chart will show; stitches that can't match are red"></canvas></div></figure>
+            </div>
+          </div>
+          <label class="chk img-red"><input type="checkbox" id="imgRed" checked /> Show stitches that differ from the picture in red</label>
+          <div class="sum" id="imgSum" aria-live="polite"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" type="button" id="imgCancel">Cancel</button>
+          <button class="btn primary" type="submit" id="imgAdd" disabled>Add section</button>
         </div>
       </form>
     </div>

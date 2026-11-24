@@ -1,4 +1,5 @@
 import { designWidth } from "./layout";
+import { pictureSection, type PictureSectionOptions } from "./image";
 import { flippedSection } from "./picture";
 import { fitToWidth, newSection } from "./sections";
 import type { Problem, StackRow } from "./stack";
@@ -110,16 +111,39 @@ export function addFlippedCopy(project: Project, sectionId: string, rotate: bool
   const source = project.sections.find((s) => s.id === sectionId);
   if (!source) throw new Error(`No section ${sectionId}`);
   const id = nextSectionId(project);
-  const used = new Set(project.sections.map((s) => s.name));
-  const base = `${source.name} (${rotate ? "upside down" : "flipped"})`;
-  let name = base;
-  for (let n = 2; used.has(name); n++) name = `${base} ${n}`;
+  const name = uniqueName(project, `${source.name} (${rotate ? "upside down" : "flipped"})`);
   const { section, misses } = flippedSection(source, designWidth(project), { id, name, rotate });
   return {
     project: { ...project, sections: [...project.sections, section], arrangement: [...project.arrangement, id] },
     id,
     misses,
   };
+}
+
+/**
+ * Add a section made from a picture on top of the arrangement. `cells` is the
+ * picture at one cell per stitch, top row first, left to right.
+ */
+export function addPictureSection(
+  project: Project,
+  cells: boolean[][],
+  opts: Omit<PictureSectionOptions, "id" | "width">,
+) {
+  const id = nextSectionId(project);
+  const name = uniqueName(project, opts.name.trim() || "Picture");
+  const res = pictureSection(cells, { ...opts, id, name, width: designWidth(project) });
+  return {
+    project: { ...project, sections: [...project.sections, res.section], arrangement: [...project.arrangement, id] },
+    id,
+    misses: res.misses,
+  };
+}
+
+function uniqueName(project: Project, base: string): string {
+  const used = new Set(project.sections.map((s) => s.name));
+  let name = base;
+  for (let n = 2; used.has(name); n++) name = `${base} ${n}`;
+  return name;
 }
 
 /** Delete a section and its steps in the arrangement. A project keeps at least one section. */

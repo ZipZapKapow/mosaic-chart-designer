@@ -7,3 +7,4 @@ export * from "./project";
 export * from "./file";
 export { exampleProject } from "./example";
 export * from "./picture";
+export * from "./image";

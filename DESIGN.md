@@ -39,7 +39,7 @@ One engine turns a target picture into X's:
 
 - A stitch shows its own row's colour, or the row above's when that row has an X there.
 - Shapes must start and end on a row of their own colour. Each column is solved exactly: fewest wrong stitches, then fewest X's; where a stitch can't match, *thin* or *thicken* decides which way it gives. Stitches that still can't be made are outlined in red.
-- **Image import:** PNG/JPG/WebP (no vectors needed); fit to width; optional 90° turn; threshold to the palette; *fill letter bodies* for outline-style lettering.
+- **Image import:** PNG/JPG/WebP, read on the device (nothing uploaded). Split into picture and background by a brightness threshold (auto-set, adjustable, swappable), with two alternating row colours. *Fill letter bodies* fills inside outlines but keeps holes (the middle of an O). Optional 90° / 180° turn; width in stitches (centred) and height in rows, proportional by default; plain rows above and below, plus one more on top if needed so the top row is the background colour. Live preview of the picture and the resulting chart; it becomes an ordinary no-repeat section on top of the arrangement. Multi-colour pictures: later.
 - **Duplicate flipped:** an upside-down copy of a section, recalculated with the same engine (X's only drop downwards, so reversing rows isn't enough). *Turn upside down* rotates 180° (also swapping the odd spare stitch side); *flip* mirrors top to bottom only.
 - Later: paint mode (paint the colours, the app places the X's).
 

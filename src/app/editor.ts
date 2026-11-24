@@ -1,6 +1,7 @@
 import {
   addColour,
   addFlippedCopy,
+  addPictureSection,
   addRowOnTop,
   addSection,
   addStep,
@@ -41,6 +42,7 @@ import {
 } from "../mosaic";
 import { drawStack } from "./canvas";
 import { Chart, type CellTarget, type ChipTarget } from "./chart";
+import { setUpImportPicture } from "./importPicture";
 import { setUpNewProject } from "./newProject";
 import { loadPrefs, savePrefs, type Prefs } from "./storage";
 import { Store } from "./store";
@@ -470,6 +472,28 @@ export function startEditor() {
       { label: "Turn upside down (rotate 180°)", onPick: () => duplicateFlipped(s.id, true) },
       { label: "Flip top to bottom only (mirror image)", onPick: () => duplicateFlipped(s.id, false) },
     ]);
+  });
+
+  const importPicture = setUpImportPicture(
+    () => store.project,
+    (cells, opts) => {
+      const res = addPictureSection(store.project, cells, opts);
+      selected = res.id;
+      const added = res.project.sections.find((s) => s.id === res.id)!;
+      missMarks = res.misses.length ? { section: added, keys: new Set(res.misses.map((m) => `${m.row}:${m.col}`)) } : null;
+      store.set(res.project);
+      const n = res.misses.length;
+      notify(
+        `Added ${added.name} on top of the arrangement: move it into place with ↑ ↓. ` +
+          (n ? `${n} stitch${n === 1 ? "" : "es"} that differ${n === 1 ? "s" : ""} from the picture ${n === 1 ? "is" : "are"} outlined in red. ` : "") +
+          "It's an ordinary section now, so you can edit it like any other.",
+        "info",
+      );
+    },
+  );
+  $("importBtn").addEventListener("click", () => {
+    if (store.project.palette.length < 2) return notify("A picture needs two colours: add another yarn colour first.");
+    importPicture.open();
   });
 
   function duplicateFlipped(id: string, rotate: boolean) {
