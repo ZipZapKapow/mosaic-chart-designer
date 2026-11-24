@@ -1,0 +1,1159 @@
+<title>Mosaic Chart Designer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell — top bar, left sidebar (project), main work area (chart). PDF view swaps the main area for a stack of A4 pages. */
+:root {
+  --bg: #F3F5F3;
+  --panel: #FFFFFF;
+  --ink: #1D2421;
+  --muted: #5B6661;
+  --line: #D8DED9;
+  --soft: #EBEFEC;
+  --accent: #3A4A8E;
+  --accent-ink: #FFFFFF;
+  --warn-bg: #FFF2D6;
+  --warn-ink: #6A4300;
+  --ok: #2E6B3F;
+  --repeat: #D2302A;        /* red repeat box: chart convention */
+  --bs: #9DC3E6;            /* border stitch blue: chart convention */
+  --gridline: rgba(0,0,0,.28);
+  --font-display: "Space Grotesk", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --panel: #1C211F; --ink: #E6EBE8; --muted: #9DA8A2; --line: #323B37; --soft: #252B28;
+    --accent: #A3B0F2; --accent-ink: #141816; --warn-bg: #3A2E14; --warn-ink: #F5D79A; --ok: #8FD3A0;
+    --gridline: rgba(0,0,0,.35); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141816; --panel: #1C211F; --ink: #E6EBE8; --muted: #9DA8A2; --line: #323B37; --soft: #252B28;
+  --accent: #A3B0F2; --accent-ink: #141816; --warn-bg: #3A2E14; --warn-ink: #F5D79A; --ok: #8FD3A0;
+  --gridline: rgba(0,0,0,.35); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* Mock-up banner */
+.banner { background: var(--soft); border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); padding-block: 8px; }
+.banner strong { color: var(--ink); }
+
+/* Top bar */
+.topbar { background: var(--panel); border-bottom: 1px solid var(--line); padding-block: 10px; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { font-size: 18px; letter-spacing: -.01em; }
+.brand .proj { color: var(--muted); font-size: 13px; }
+.tabs { display: flex; gap: 4px; background: var(--soft); padding: 3px; border-radius: 8px; }
+.tabs a { text-decoration: none; color: var(--muted); padding: 5px 12px; border-radius: 6px; font-weight: 500; font-size: 13px; }
+.tabs a[aria-current="page"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.top-actions { margin-left: auto; display: flex; gap: 8px; }
+
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 7px; padding: 6px 11px; cursor: pointer; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+
+/* App layout */
+.app { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 16px; padding-block: 16px; align-items: start; }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
+
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; font-family: var(--font-body); }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+
+.whole canvas { width: auto; max-width: 100%; max-height: 260px; margin: 0 auto; image-rendering: pixelated; border: 1px solid var(--line); border-radius: 4px; display: block; }
+.hint { color: var(--muted); font-size: 12px; }
+
+.sec-list { display: flex; flex-direction: column; gap: 6px; }
+.sec-item { display: grid; grid-template-columns: 56px minmax(0,1fr); gap: 10px; align-items: center; padding: 6px; border: 1px solid transparent; border-radius: 8px; cursor: pointer; background: none; text-align: left; width: 100%; }
+.sec-item:hover { background: var(--soft); }
+.sec-item[aria-current="true"] { border-color: var(--accent); background: var(--soft); }
+.sec-item canvas { width: 56px; height: 32px; image-rendering: pixelated; border-radius: 3px; border: 1px solid var(--line); }
+.sec-item .nm { font-weight: 600; }
+.sec-item .meta { color: var(--muted); font-size: 12px; }
+
+.arr { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 4px 2px 9px; font-size: 12px; background: var(--panel); }
+.chip .n { color: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.chip button { border: none; background: none; cursor: pointer; color: var(--muted); padding: 0 4px; border-radius: 999px; line-height: 1.2; }
+.chip button:hover { background: var(--soft); color: var(--ink); }
+.arr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.arr-row { display: grid; grid-template-columns: 18px 20px minmax(0,1fr) auto; gap: 6px; align-items: center; border: 1px solid var(--line); border-radius: 7px; padding: 3px 4px 3px 4px; background: var(--panel); font-size: 13px; }
+.arr-row .grip { cursor: grab; color: var(--muted); text-align: center; user-select: none; letter-spacing: -2px; }
+.arr-row .n { color: var(--muted); font-family: var(--font-mono); font-size: 11px; text-align: right; }
+.arr-row .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arr-row .acts { display: flex; gap: 1px; }
+.arr-row .acts button { border: none; background: none; cursor: pointer; color: var(--muted); width: 24px; height: 24px; border-radius: 5px; line-height: 1; }
+.arr-row .acts button:hover:not(:disabled) { background: var(--soft); color: var(--ink); }
+.arr-row .acts button:disabled { opacity: .3; cursor: default; }
+.arr-row.dragging { opacity: .45; }
+.arr-row.drop-before { box-shadow: 0 -3px 0 0 var(--accent); }
+.arr-row.drop-after { box-shadow: 0 3px 0 0 var(--accent); }
+.arr-row.moved { animation: moved .5s ease; }
+@keyframes moved { from { background: var(--soft); border-color: var(--accent); } }
+@media (prefers-reduced-motion: reduce) { .arr-row.moved { animation: none; } }
+.arr-add { display: flex; gap: 6px; }
+.arr-add select { border: 1px solid var(--line); border-radius: 7px; padding: 3px 6px; background: var(--panel); font-size: 12px; }
+.joins { font-size: 12px; display: flex; gap: 6px; align-items: flex-start; }
+.joins.ok { color: var(--ok); }
+.joins.bad { color: var(--warn-ink); background: var(--warn-bg); padding: 6px 8px; border-radius: 6px; }
+
+.pal { display: flex; flex-direction: column; gap: 6px; }
+.pal-row { display: grid; grid-template-columns: 22px 34px minmax(0,1fr); gap: 8px; align-items: center; }
+.pal-row .letter { font-family: var(--font-mono); font-weight: 500; text-align: center; }
+.pal-row input[type=color] { width: 34px; height: 26px; border: 1px solid var(--line); border-radius: 6px; padding: 1px; background: var(--panel); cursor: pointer; }
+.pal-row input[type=text] { border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; background: var(--panel); min-width: 0; width: 100%; }
+
+/* Main editor */
+.main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sec-head { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-end; justify-content: space-between; }
+.sec-head h2 { font-size: 24px; letter-spacing: -.015em; }
+.sec-head .sum { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.settings { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: flex-end; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field label, .field .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.field input[type=number] { width: 70px; border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; background: var(--panel); font-variant-numeric: tabular-nums; }
+.field select { border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: var(--panel); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button { border: none; background: var(--panel); padding: 4px 10px; cursor: pointer; font-size: 13px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chk, .field label.chk { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; cursor: pointer; text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 500; }
+.chk input { accent-color: var(--accent); width: 15px; height: 15px; }
+.field input[type=number]:disabled { opacity: .5; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--line); }
+.toolbar .hint { margin-left: auto; }
+
+.notice { border-radius: 8px; padding: 9px 12px; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+.notice.warn { background: var(--warn-bg); color: var(--warn-ink); }
+.notice.info { background: var(--soft); color: var(--ink); }
+.notice .x { margin-left: auto; border: none; background: none; cursor: pointer; color: inherit; font-size: 15px; line-height: 1; }
+.centre-note { font-size: 13px; color: var(--warn-ink); background: var(--warn-bg); border-radius: 8px; padding: 8px 12px; }
+
+.chart-scroll { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.chart-wrap { position: relative; display: inline-block; }
+table.chart { border-collapse: collapse; font-family: var(--font-mono); user-select: none; -webkit-user-select: none; }
+table.chart td, table.chart th { padding: 0; text-align: center; vertical-align: middle; font-weight: 400; }
+table.chart .c { width: var(--cell); height: var(--cell); min-width: var(--cell); border: 1px dashed var(--gridline); cursor: pointer; font-size: calc(var(--cell) * .52); line-height: 1; touch-action: none; }
+table.chart .c.locked { cursor: not-allowed; }
+table.chart .c.bs { background: var(--bs) !important; color: #1d2a36; font-size: calc(var(--cell) * .36); border-style: solid; border-color: rgba(0,0,0,.25); }
+table.chart .c.rep-edge { box-shadow: inset -1px 0 0 rgba(210,48,42,.55); }
+table.chart .c.flash { animation: flash .6s ease; }
+@keyframes flash { 0%, 60% { outline: 3px solid var(--repeat); outline-offset: -3px; } 100% { outline: 0 solid transparent; } }
+@media (prefers-reduced-motion: reduce) { table.chart .c.flash { animation: none; outline: 3px solid var(--repeat); outline-offset: -3px; } }
+table.chart .rn { width: 34px; min-width: 34px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); background: var(--panel); font-variant-numeric: tabular-nums; }
+table.chart .hdr { font-size: 10px; color: var(--muted); height: 20px; border: 1px solid var(--line); background: var(--panel); }
+table.chart .hdr.lbl { color: var(--repeat); font-family: var(--font-body); font-size: 11px; font-weight: 600; border: 2px solid var(--repeat); }
+table.chart tr.fr .c { cursor: not-allowed; }
+table.chart .cc { padding: 0 6px; border: 1px solid var(--line); background: var(--panel); }
+.colchip { width: calc(var(--cell) + 6px); min-width: 26px; height: calc(var(--cell) - 4px); min-height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,.3); font-family: var(--font-mono); font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.colchip:disabled { cursor: default; }
+.repbox { position: absolute; border: 2.5px solid var(--repeat); pointer-events: none; border-radius: 1px; }
+
+.popover { position: fixed; z-index: 30; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 6px; display: flex; flex-direction: column; gap: 2px; min-width: 170px; }
+.popover button { display: flex; align-items: center; gap: 8px; border: none; background: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; text-align: left; }
+.popover button:hover, .popover button:focus-visible { background: var(--soft); }
+.popover .sw { width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(0,0,0,.25); }
+.popover .ph { font-size: 11px; color: var(--muted); padding: 2px 8px 4px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+
+/* Project menu + new project sheet */
+.projsel { display: flex; gap: 8px; align-items: center; }
+.projsel select { border: 1px solid var(--line); border-radius: 7px; padding: 5px 8px; background: var(--panel); font-size: 13px; max-width: 220px; }
+.field input[type=text] { border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; background: var(--panel); width: 140px; }
+.modal { position: fixed; inset: 0; z-index: 40; background: rgba(10,14,12,.5); display: flex; justify-content: center; align-items: flex-start; overflow-y: auto; padding: max(28px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { background: var(--panel); color: var(--ink); border-radius: 12px; width: min(100%, 520px); padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 48px rgba(0,0,0,.3); }
+.sheet h2 { font-size: 21px; letter-spacing: -.01em; }
+.sheet fieldset { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sheet legend { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; padding: 0; margin-bottom: 6px; }
+.sheet .field input[type=text] { width: 100%; }
+.sheet .row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.sheet .row3 input[type=number], .sheet .row3 select { width: 100%; }
+.sheet .sum { background: var(--soft); border-radius: 8px; padding: 9px 11px; font-size: 13px; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 2px; }
+.sheet .actions { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 460px) { .sheet .row3 { grid-template-columns: minmax(0, 1fr); } }
+
+/* PDF preview */
+.pdf { padding-block: 16px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.pdf-intro { max-width: 640px; color: var(--muted); font-size: 13px; text-align: center; }
+.pages { display: flex; flex-direction: column; gap: 22px; align-items: center; width: 100%; }
+.page { --p-ink: #1E1E1E; --p-muted: #6A6A6A; --p-line: #CFCFCF; background: #FFFFFF; color: var(--p-ink); width: min(100%, 620px); aspect-ratio: 1 / 1.414; box-shadow: 0 2px 14px rgba(0,0,0,.16); border-radius: 3px; padding: 34px 36px 26px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; color-scheme: light; }
+.page .ph-top { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--p-line); padding-bottom: 6px; font-size: 11px; color: var(--p-muted); }
+.page .ph-top b { font-family: var(--font-display); color: var(--p-ink); font-size: 13px; font-weight: 600; }
+.page h3 { font-size: 19px; text-align: center; }
+.page .pbody { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.page .foot { display: flex; justify-content: space-between; font-size: 10px; color: var(--p-muted); border-top: 1px solid var(--p-line); padding-top: 6px; }
+.page canvas.design { display: block; margin: 0 auto; image-rendering: pixelated; border: 2px solid var(--p-ink); max-width: 100%; max-height: 330px; }
+.key { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 14px; font-size: 12px; }
+.key div { display: flex; gap: 8px; align-items: center; }
+.key .sw { width: 22px; height: 22px; border: 1px solid #555; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; flex: none; }
+.legend { display: grid; grid-template-columns: 30px 1fr; gap: 7px 12px; font-size: 12px; align-items: center; }
+.legend .sym { width: 26px; height: 22px; border: 1px solid #444; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 11px; }
+.page h4 { margin: 0; font-family: var(--font-display); font-size: 13px; font-weight: 600; }
+.checklist { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.checklist td { border: 1px solid var(--p-line); padding: 5px 8px; }
+.checklist td.n { width: 40px; text-align: center; font-family: var(--font-mono); color: var(--p-muted); }
+.checklist td.tk { width: 40px; text-align: center; }
+.tick { width: 18px; height: 18px; border: 1.5px solid #333; border-radius: 2px; background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #1E1E1E; padding: 0; line-height: 1; }
+.tick[aria-checked="true"]::after { content: "✓"; font-weight: 700; }
+.page p { margin: 0; font-size: 12px; }
+.page .start { font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
+.page .pchart-wrap { display: flex; justify-content: center; overflow-x: auto; }
+.page table.chart { --gridline: rgba(0,0,0,.3); }
+.page table.chart .c { cursor: default; }
+.page table.chart .rn, .page table.chart .hdr, .page table.chart .cc { background: #fff; color: #333; border-color: #999; }
+.page table.chart .hdr.lbl { color: #D2302A; border-color: #D2302A; }
+.page table.chart .tkc { border: 1px solid #999; padding: 0 3px; }
+.page .note { font-size: 11.5px; font-style: italic; text-align: center; color: var(--p-muted); }
+</style>
+
+<div class="banner wrap"><strong>Mock-up.</strong> Clicking works so you can try the layout, but nothing is saved and Save / Export PDF aren't built yet. The example design is made up. Use <strong>+ New project</strong> for a blank one; the example stays in the project menu.</div>
+
+<header class="topbar wrap">
+  <div class="brand"><h1>Mosaic Chart Designer</h1></div>
+  <div class="projsel">
+    <select id="projSelect" aria-label="Open project"></select>
+    <button class="btn" id="newProjBtn" type="button">+ New project</button>
+  </div>
+  <nav class="tabs" aria-label="View">
+    <a href="#editor" id="tabEditor">Editor</a>
+    <a href="#pdf" id="tabPdf">PDF preview</a>
+  </nav>
+  <div class="top-actions">
+    <button class="btn" id="saveBtn" type="button">Save project</button>
+    <button class="btn primary" id="exportBtn" type="button">Export PDF</button>
+  </div>
+</header>
+
+<div id="editorView" class="app wrap">
+  <aside class="side">
+    <section class="card whole">
+      <div class="card-head"><h2>Whole design</h2><span class="hint" id="wholeMeta"></span></div>
+      <canvas id="wholeCanvas" aria-label="Preview of the whole arranged design"></canvas>
+      <p class="hint" style="margin:0">Updates as you click. This is the "full design image" page of the PDF.</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Sections</h2><button class="btn small" id="addSection" type="button">+ New section</button></div>
+      <div class="sec-list" id="secList"></div>
+    </section>
+
+    <section class="card">
+      <h2>Arrangement (order you work them)</h2>
+      <p class="hint" style="margin:0">Read from the bottom up, like the whole design: step 1 is worked first. Drag ⋮⋮ or use ↑ ↓ to reorder.</p>
+      <div class="arr-add"><select id="arrSelect" aria-label="Section to add"></select><button class="btn small" id="arrAdd" type="button">Add on top</button></div>
+      <ol class="arr-list" id="arrList" aria-label="Arrangement steps, first worked at the bottom"></ol>
+      <div id="joins" class="joins"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Yarn colours</h2><button class="btn small" id="addColour" type="button">+ Colour</button></div>
+      <div class="pal" id="palList"></div>
+    </section>
+
+    <section class="card">
+      <h2>Project</h2>
+      <div class="inline">
+        <div class="field"><label for="widthInput">Stitches per row</label><input type="number" id="widthInput" min="14" max="300"></div>
+      </div>
+      <p class="hint" style="margin:0" id="chainInfo"></p>
+    </section>
+  </aside>
+
+  <main class="main">
+    <div class="sec-head">
+      <div>
+        <h2 id="secTitle">Pattern 1</h2>
+        <div class="sum" id="secSum"></div>
+      </div>
+      <div class="seg" role="group" aria-label="Chart view">
+        <button type="button" id="viewRepeat" aria-pressed="true">One repeat</button>
+        <button type="button" id="viewFull" aria-pressed="false">Full width</button>
+      </div>
+    </div>
+
+    <div class="settings">
+      <div class="field"><label for="secName">Section name</label><input type="text" id="secName"></div>
+      <div class="field"><label for="motifInput">Repeat width</label>
+        <div class="inline"><input type="number" id="motifInput" min="2" max="60"><label class="chk"><input type="checkbox" id="noRepeat"> No repeat</label></div>
+      </div>
+      <div class="field" id="fillField"><span class="lbl">Spare stitches</span>
+        <div class="seg" role="group" aria-label="Spare stitches">
+          <button type="button" id="fillCut" aria-pressed="true">Continue motif</button>
+          <button type="button" id="fillPlain" aria-pressed="false">Plain</button>
+        </div>
+      </div>
+      <div class="field" id="biasField"><span class="lbl">Odd spare stitch goes</span>
+        <div class="seg" role="group" aria-label="Side for the odd spare stitch">
+          <button type="button" id="biasLeft" aria-pressed="true">Left (LS)</button>
+          <button type="button" id="biasRight" aria-pressed="false">Right (FS)</button>
+        </div>
+      </div>
+      <div class="field"><span class="lbl">Rows</span>
+        <div class="inline"><button class="btn small" id="rowAdd" type="button">+ Row on top</button><button class="btn small" id="rowDel" type="button">− Top row</button></div>
+      </div>
+      <div class="field"><span class="lbl">Row colour sequence</span>
+        <div class="inline" id="seqBox"></div>
+      </div>
+    </div>
+
+    <div id="centreNote" class="centre-note" hidden></div>
+
+    <div class="toolbar">
+      <button class="btn" id="undoBtn" type="button">↶ Undo</button>
+      <button class="btn" id="redoBtn" type="button">↷ Redo</button>
+      <span class="sep"></span>
+      <button class="btn" id="mirrorBtn" type="button" title="Copy the right half of the repeat onto the left, flipped">⇋ Mirror right half to left</button>
+      <button class="btn" id="clearBtn" type="button">Clear all X's</button>
+      <button class="btn" id="delSection" type="button">Delete section</button>
+      <span class="sep"></span>
+      <button class="btn" id="zoomOut" type="button" aria-label="Zoom out">−</button>
+      <button class="btn" id="zoomIn" type="button" aria-label="Zoom in">+</button>
+      <span class="hint">Click a cell to add or remove an X. Drag to do several. Click a row's colour letter to change it.</span>
+    </div>
+
+    <div id="notice" class="notice info" role="status" aria-live="polite" hidden></div>
+
+    <div class="chart-scroll"><div class="chart-wrap" id="chartWrap"></div></div>
+  </main>
+</div>
+
+<div id="pdfView" class="pdf wrap" hidden>
+  <p class="pdf-intro">The PDF pages, sized for reading on your iPad. Tick boxes would be tappable in the real PDF as well as markable with a pencil. Try ticking them here.</p>
+  <div class="pages" id="pages"></div>
+</div>
+
+<div id="popover" class="popover" hidden role="menu"></div>
+
+<div id="newDlg" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="newTitle">
+  <form class="sheet" id="newForm" novalidate>
+    <h2 id="newTitle">New project</h2>
+    <p class="hint" style="margin:0">Set up the basics. You can change all of this later, and add more colours and sections in the editor.</p>
+    <div class="field"><label for="npName">Project name</label><input type="text" id="npName" value="My mosaic project"></div>
+
+    <fieldset>
+      <legend>Yarn colours</legend>
+      <div class="pal-row"><span class="letter">A</span><input type="color" id="npHexA" value="#EFE8D8" aria-label="Colour A"><input type="text" id="npNameA" value="Cream" aria-label="Name of colour A"></div>
+      <div class="pal-row"><span class="letter">B</span><input type="color" id="npHexB" value="#2F5F78" aria-label="Colour B"><input type="text" id="npNameB" value="Teal" aria-label="Name of colour B"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Width</legend>
+      <div class="seg" role="group" aria-label="Set the width by">
+        <button type="button" id="npModeTotal" aria-pressed="true">Total stitches</button>
+        <button type="button" id="npModeRep" aria-pressed="false">Repeats</button>
+      </div>
+      <div class="row3" id="npTotalBox">
+        <div class="field"><label for="npTotal">Stitches per row</label><input type="number" id="npTotal" value="60" min="14" max="300"></div>
+        <div class="field"><label for="npStart">Pattern 1 starts as</label><select id="npStart"><option value="free">No repeat</option><option value="rep">A repeat</option></select></div>
+        <div class="field" id="npTRepField" hidden><label for="npTRep">Repeat width</label><input type="number" id="npTRep" value="12" min="2" max="60"></div>
+      </div>
+      <div class="row3" id="npRepBox" hidden>
+        <div class="field"><label for="npW">Repeat width</label><input type="number" id="npW" value="12" min="2" max="60"></div>
+        <div class="field"><label for="npN">Repeats across</label><input type="number" id="npN" value="5" min="1" max="40"></div>
+        <div class="field"><label for="npX">Spare stitches</label><input type="number" id="npX" value="1" min="0" max="40"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Rows</legend>
+      <div class="row3">
+        <div class="field"><label for="npRows">Rows in Pattern 1</label><input type="number" id="npRows" value="20" min="2" max="200"></div>
+        <div class="field"><label for="npFirst">Row 1 colour</label><select id="npFirst"><option value="0">A</option><option value="1">B</option></select></div>
+        <div class="field"><label for="npFR">Foundation rows</label><select id="npFR"><option>1</option><option selected>2</option><option>3</option></select></div>
+      </div>
+    </fieldset>
+
+    <div class="sum" id="npSum" aria-live="polite"></div>
+
+    <div class="actions">
+      <button class="btn" type="button" id="npCancel">Cancel</button>
+      <button class="btn primary" type="submit">Create project</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // ---------- Sample data (made-up design) ----------
+  const fromStr = s => [...s].map(ch => ch === 'x');
+  const P1 = ["............","............","xxx..xx..xxx","...xx..xx...","xx........xx","..xx.xx.xx..","x...x..x...x",".xx......xx.","...xxxxxx...",".xx......xx.","x...x..x...x","..xx.xx.xx..","xx........xx","...xx..xx...","xxx..xx..xxx","............"];
+  const P2 = ["..........","....xx....","xx......xx","..xx..xx..","....xx....","xx......xx","..xx..xx..",".........."];
+
+  let state = {
+    name: "Example: Diamond scarf",
+    width: 73,
+    palette: [
+      { name: "Oatmeal", hex: "#E9E1CF" },
+      { name: "Moss", hex: "#5E7F4C" },
+      { name: "Damson", hex: "#6D3B5F" },
+    ],
+    foundation: [0, 1],
+    sections: [
+      { name: "Pattern 1", w: 12, fill: "cut", rows: P1.map((s, i) => ({ c: i % 2 ? 1 : 0, x: fromStr(s) })) },
+      { name: "Pattern 2", w: 10, fill: "cut", rows: P2.map((s, i) => ({ c: i % 2 ? 2 : 0, x: fromStr(s) })) },
+    ],
+    arrangement: [0, 1, 0, 1, 0],
+  };
+  state.ticks = {};
+  const projects = [state];
+  let cur = 0;
+  const ui = { sel: 0, view: "repeat", zoom: 26, ticks: state.ticks };
+  const undo = [], redo = [];
+  const LET = "ABCDEFGH";
+
+  // ---------- Geometry ----------
+  function geo(sec) {
+    const W = state.width, w = sec.norepeat ? W : sec.w;
+    if (sec.norepeat) sec.rows.forEach(r => { if (r.x.length !== W) r.x = Array.from({ length: W }, (_, k) => !!r.x[k]); });
+    const n = Math.max(0, Math.floor(W / w));
+    const spare = W - n * w;
+    const lead = sec.bias === "right" ? Math.ceil(spare / 2) : Math.floor(spare / 2); // first stitches, right-hand side (worked first)
+    const tail = spare - lead;                // last stitches, left-hand side
+    return { W, w, n, spare, lead, tail };
+  }
+  function motifCol(sec, g, i) {
+    const inRep = i >= g.lead && i < g.lead + g.n * g.w;
+    if (!inRep && sec.fill === "plain") return null;
+    return (((i - g.lead) % g.w) + g.w) % g.w;
+  }
+  const hasX = (sec, g, r, i) => { const m = motifCol(sec, g, i); return m !== null && !!sec.rows[r].x[m]; };
+
+  // Build displayable rows for a section (optionally with foundation rows)
+  function sectionRows(si, withFR) {
+    const sec = state.sections[si], g = geo(sec), out = [];
+    if (withFR) state.foundation.forEach((c, k) => out.push({ label: "FR" + (k + 1), c, fr: true, xAt: () => false }));
+    sec.rows.forEach((row, r) => out.push({ label: String(r + 1), c: row.c, r, xAt: i => hasX(sec, g, r, i) }));
+    return out;
+  }
+  function wholeRows() {
+    const out = state.foundation.map(c => ({ c, xAt: () => false }));
+    state.arrangement.forEach(si => {
+      const sec = state.sections[si], g = geo(sec);
+      sec.rows.forEach((row, r) => out.push({ c: row.c, xAt: i => hasX(sec, g, r, i) }));
+    });
+    return out;
+  }
+  const shown = (rows, k, i) => (k + 1 < rows.length && rows[k + 1].xAt(i)) ? rows[k + 1].c : rows[k].c;
+
+  // ---------- Helpers ----------
+  const $ = id => document.getElementById(id);
+  const hex = c => state.palette[c] ? state.palette[c].hex : "#999999";
+  function inkFor(h) {
+    const v = parseInt(h.slice(1), 16), r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#1b1b1b" : "#ffffff";
+  }
+  const snapshot = () => JSON.stringify({ width: state.width, palette: state.palette, foundation: state.foundation, sections: state.sections, arrangement: state.arrangement });
+  function pushUndo() { undo.push(snapshot()); if (undo.length > 200) undo.shift(); redo.length = 0; }
+  function restore(s) { Object.assign(state, JSON.parse(s)); if (ui.sel >= state.sections.length) ui.sel = 0; }
+
+  let noticeTimer;
+  function notify(msg, kind = "warn") {
+    const el = $("notice");
+    el.className = "notice " + kind; el.hidden = false;
+    el.innerHTML = "";
+    const t = document.createElement("span"); t.textContent = msg; el.appendChild(t);
+    const x = document.createElement("button"); x.className = "x"; x.type = "button"; x.setAttribute("aria-label", "Dismiss"); x.textContent = "×";
+    x.onclick = () => { el.hidden = true; }; el.appendChild(x);
+    clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { el.hidden = true; }, kind === "warn" ? 9000 : 5000);
+  }
+
+  // ---------- X toggling with rules ----------
+  function tryToggle(si, r, i, want) {
+    const sec = state.sections[si], g = geo(sec);
+    const m = motifCol(sec, g, i);
+    if (m === null) { return { err: "This stitch is a plain spare stitch outside the repeats. Switch Spare stitches to \"Continue motif\" to pattern it." }; }
+    const cur = !!sec.rows[r].x[m];
+    if (want === cur) return { same: true };
+    if (want) {
+      if (r > 0 && sec.rows[r - 1].x[m]) return { err: `Can't add an X on row ${r + 1}: row ${r} already has an X in this stitch. An X can't sit on top of another X, because the stitch below is already a dropped treble, so there's no plain stitch for this one to cover.`, cell: [r - 1, i] };
+      if (r + 1 < sec.rows.length && sec.rows[r + 1].x[m]) return { err: `Can't add an X on row ${r + 1}: row ${r + 2} has an X directly above this stitch, and an X can't sit on top of another X.`, cell: [r + 1, i] };
+    }
+    sec.rows[r].x[m] = want;
+    if (want && r > 0 && sec.rows[r - 1].c === sec.rows[r].c) return { ok: true, info: `X added. Row ${r} is the same colour as row ${r + 1}, so this X won't change what you see.` };
+    return { ok: true };
+  }
+
+  // ---------- Rendering: chart table ----------
+  function columnsFor(sec, g, mode) {
+    // returns display columns left→right: {type:'bs'} or {i, head}
+    const cols = [{ type: "bs" }];
+    if (mode === "full") {
+      for (let i = g.W - 1; i >= 0; i--) cols.push({ i, head: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "" });
+    } else {
+      for (let i = g.W - 1; i >= g.lead + g.n * g.w; i--) cols.push({ i, head: "LS", zone: "tail" });
+      for (let i = g.lead + g.w - 1; i >= g.lead; i--) cols.push({ i, head: String(i - g.lead + 1), zone: "rep" });
+      for (let i = g.lead - 1; i >= 0; i--) cols.push({ i, head: "FS", zone: "lead" });
+    }
+    cols.push({ type: "bs" });
+    return cols;
+  }
+
+  function buildChart(si, opts) {
+    const { mode, cell, editable, ticks, withFR } = opts;
+    const sec = state.sections[si], g = geo(sec);
+    const rows = sectionRows(si, withFR);
+    const cols = columnsFor(sec, g, mode);
+    const wrap = document.createElement("div"); wrap.className = "chart-wrap"; wrap.style.setProperty("--cell", cell + "px");
+    const t = document.createElement("table"); t.className = "chart";
+    const repStartIdx = cols.findIndex(c => c.i !== undefined && (mode === "full" ? c.i === g.lead + g.n * g.w - 1 : c.zone === "rep"));
+    const repCount = mode === "full" ? g.n * g.w : g.w;
+
+    // label row
+    const lab = t.insertRow(); const leftPad = lab.insertCell(); leftPad.className = "";
+    let ci = 0;
+    if (repStartIdx > 0) { const pre = lab.insertCell(); pre.colSpan = repStartIdx; }
+    const lc = lab.insertCell(); lc.colSpan = Math.max(1, repCount); lc.className = "hdr lbl";
+    lc.textContent = sec.norepeat ? `No repeat · ${g.W} stitches` : mode === "full" ? `${g.w} stitch repeat × ${g.n}` : `${g.w} stitch – repeat ${g.n} times`;
+    if (sec.norepeat) lc.className = "hdr";
+    const post = cols.length - repStartIdx - repCount; if (post > 0) { const pc = lab.insertCell(); pc.colSpan = post; }
+
+    const headRow = (cls) => {
+      const h = t.insertRow(); h.className = cls;
+      h.insertCell().className = "hdr";
+      cols.forEach(c => { const td = h.insertCell(); td.className = "hdr"; td.textContent = c.type === "bs" ? "BS" : c.head; });
+      h.insertCell().className = "hdr"; h.insertCell().className = "hdr";
+      if (ticks) { const tk = h.insertCell(); tk.className = "hdr"; tk.textContent = "✓"; }
+    };
+    headRow("top");
+
+    const bodyRows = [];
+    for (let k = rows.length - 1; k >= 0; k--) {
+      const row = rows[k];
+      const tr = t.insertRow(); if (row.fr) tr.className = "fr";
+      const l = tr.insertCell(); l.className = "rn"; l.textContent = row.label;
+      cols.forEach(c => {
+        const td = tr.insertCell();
+        td.className = "c";
+        if (c.type === "bs") { td.classList.add("bs"); td.textContent = cell >= 18 ? "BS" : ""; return; }
+        const col = shown(rows, k, c.i);
+        td.style.background = hex(col);
+        if (row.xAt(c.i)) { td.textContent = "X"; td.style.color = inkFor(hex(col)); }
+        if (mode === "full" && c.i > g.lead && c.i < g.lead + g.n * g.w && (c.i - g.lead) % g.w === 0) td.classList.add("rep-edge");
+        if (editable && !row.fr) { td.dataset.r = row.r; td.dataset.i = c.i; }
+        else td.classList.add("locked");
+      });
+      const ccell = tr.insertCell(); ccell.className = "cc";
+      const chip = document.createElement("button"); chip.type = "button"; chip.className = "colchip";
+      chip.style.background = hex(row.c); chip.style.color = inkFor(hex(row.c)); chip.textContent = LET[row.c];
+      chip.setAttribute("aria-label", `Row ${row.label} colour ${LET[row.c]} ${state.palette[row.c]?.name || ""}`);
+      if (editable && !row.fr) { chip.dataset.row = row.r; } else chip.disabled = !editable || row.fr;
+      if (editable && row.fr) { chip.dataset.fr = row.label.slice(2) - 1; chip.disabled = false; }
+      ccell.appendChild(chip);
+      const r2 = tr.insertCell(); r2.className = "rn"; r2.textContent = row.label;
+      if (ticks) {
+        const tk = tr.insertCell(); tk.className = "tkc";
+        const b = document.createElement("button"); b.type = "button"; b.className = "tick"; b.setAttribute("role", "checkbox");
+        const key = `${si}:${row.label}`; b.setAttribute("aria-checked", ui.ticks[key] ? "true" : "false");
+        b.setAttribute("aria-label", `Row ${row.label} done`);
+        b.onclick = () => { ui.ticks[key] = !ui.ticks[key]; b.setAttribute("aria-checked", ui.ticks[key] ? "true" : "false"); };
+        tk.appendChild(b);
+      }
+      if (!row.fr) bodyRows.push(tr);
+    }
+    headRow("bottom");
+    wrap.appendChild(t);
+
+    // red repeat box over data rows of the repeat region
+    if (bodyRows.length && g.n > 0 && !sec.norepeat) {
+      requestAnimationFrame(() => {
+        const first = bodyRows[0].cells[1 + repStartIdx], last = bodyRows[bodyRows.length - 1].cells[repStartIdx + repCount];
+        if (!first || !last) return;
+        const wr = wrap.getBoundingClientRect(), a = first.getBoundingClientRect(), b = last.getBoundingClientRect();
+        const box = document.createElement("div"); box.className = "repbox";
+        box.style.left = (a.left - wr.left - 1) + "px"; box.style.top = (a.top - wr.top - 1) + "px";
+        box.style.width = (b.right - a.left + 2) + "px"; box.style.height = (b.bottom - a.top + 2) + "px";
+        wrap.appendChild(box);
+      });
+    }
+    return wrap;
+  }
+
+  // ---------- Canvas renders ----------
+  function drawRows(canvas, rows, W, scale, withBorder) {
+    const cols = W + 2;
+    canvas.width = cols * scale; canvas.height = rows.length * scale;
+    const ctx = canvas.getContext("2d");
+    for (let k = 0; k < rows.length; k++) {
+      const y = (rows.length - 1 - k) * scale;
+      for (let x = 0; x < cols; x++) {
+        let col;
+        if (x === 0 || x === cols - 1) col = rows[k].c; // border stitches are plain DC in the row colour
+        else col = shown(rows, k, W - x); // x=1 is leftmost stitch (i = W-1)
+        ctx.fillStyle = hex(col); ctx.fillRect(x * scale, y, scale, scale);
+      }
+    }
+  }
+  function sectionThumb(si) {
+    const c = document.createElement("canvas");
+    drawRows(c, sectionRows(si, false), state.width, 2);
+    return c;
+  }
+
+  // ---------- Joins check ----------
+  function checkJoins() {
+    const problems = [];
+    for (let a = 0; a + 1 < state.arrangement.length; a++) {
+      const s1 = state.sections[state.arrangement[a]], s2 = state.sections[state.arrangement[a + 1]];
+      const g1 = geo(s1), g2 = geo(s2);
+      const top = s1.rows.length - 1;
+      for (let i = 0; i < state.width; i++) {
+        if (hasX(s1, g1, top, i) && hasX(s2, g2, 0, i)) { problems.push(`${s2.name} (step ${a + 2}) row 1 has an X above an X in ${s1.name} row ${top + 1}, stitch ${i + 1}.`); break; }
+      }
+    }
+    return problems;
+  }
+
+  // ---------- Render editor ----------
+  function renderEditor() {
+    const sec = state.sections[ui.sel], g = geo(sec);
+    // whole design
+    const wc = $("wholeCanvas"); const wr = wholeRows();
+    drawRows(wc, wr, state.width, 3);
+    $("wholeMeta").textContent = `${state.width + 2} sts × ${wr.length} rows`;
+
+    // sections
+    const sl = $("secList"); sl.innerHTML = "";
+    state.sections.forEach((s, si) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "sec-item"; b.setAttribute("aria-current", si === ui.sel ? "true" : "false");
+      b.appendChild(sectionThumb(si));
+      const d = document.createElement("div");
+      const used = state.arrangement.filter(x => x === si).length;
+      d.innerHTML = `<div class="nm"></div><div class="meta">${s.norepeat ? "no repeat" : s.w + "-st repeat"} ·${s.rows.length} rows · used ${used}×</div>`;
+      d.querySelector(".nm").textContent = s.name;
+      b.appendChild(d); b.onclick = () => { ui.sel = si; render(); };
+      sl.appendChild(b);
+    });
+
+    // arrangement
+    const al = $("arrList"); al.innerHTML = "";
+    const last = state.arrangement.length - 1;
+    state.arrangement.forEach((si, k) => {
+      const li = document.createElement("li"); li.className = "arr-row"; li.draggable = true; li.dataset.k = k;
+      if (ui.moved === k) li.classList.add("moved");
+      li.innerHTML = `<span class="grip" aria-hidden="true" title="Drag to move">⋮⋮</span><span class="n">${k + 1}</span><span class="t"></span><span class="acts"></span>`;
+      li.querySelector(".t").textContent = state.sections[si].name;
+      const acts = li.querySelector(".acts");
+      const mk = (txt, label, dis, fn) => { const b = document.createElement("button"); b.type = "button"; b.textContent = txt; b.setAttribute("aria-label", label); b.title = label; b.disabled = dis; b.onclick = fn; acts.appendChild(b); };
+      // Shown bottom-up like the fabric: step 1 at the bottom, so ↑ means later in the work
+      mk("↑", `Move step ${k + 1} up (later)`, k === last, () => moveStep(k, k + 1));
+      mk("↓", `Move step ${k + 1} down (earlier)`, k === 0, () => moveStep(k, k - 1));
+      mk("×", `Remove step ${k + 1}`, false, () => { if (state.arrangement.length <= 1) return notify("The arrangement needs at least one section."); pushUndo(); state.arrangement.splice(k, 1); render(); });
+      al.prepend(li);
+    });
+    ui.moved = null;
+    const as = $("arrSelect"); as.innerHTML = "";
+    state.sections.forEach((s, si) => { const o = document.createElement("option"); o.value = si; o.textContent = s.name; as.appendChild(o); });
+    const probs = checkJoins(), j = $("joins");
+    if (probs.length) { j.className = "joins bad"; j.textContent = "⚠ " + probs[0]; }
+    else { j.className = "joins ok"; j.textContent = "✓ All joins between sections are OK"; }
+
+    // palette
+    const pl = $("palList"); pl.innerHTML = "";
+    state.palette.forEach((p, pi) => {
+      const row = document.createElement("div"); row.className = "pal-row";
+      row.innerHTML = `<span class="letter">${LET[pi]}</span>`;
+      const ci = document.createElement("input"); ci.type = "color"; ci.value = p.hex; ci.id = "pal-c-" + pi; ci.setAttribute("aria-label", `Colour ${LET[pi]}`);
+      ci.oninput = () => { p.hex = ci.value; renderChartOnly(); renderWholeOnly(); };
+      ci.onchange = () => render();
+      const ti = document.createElement("input"); ti.type = "text"; ti.value = p.name; ti.id = "pal-n-" + pi; ti.setAttribute("aria-label", `Name of colour ${LET[pi]}`);
+      ti.oninput = () => { p.name = ti.value; };
+      row.append(ci, ti); pl.appendChild(row);
+    });
+    $("addColour").disabled = state.palette.length >= 6;
+
+    // project
+    $("widthInput").value = state.width + 2;
+    $("chainInfo").textContent = `Includes the 2 border stitches, so ${state.width} to design with. Foundation chain: ${state.width + 3}.`;
+
+    // section header & settings
+    $("secTitle").textContent = sec.name;
+    const parts = [sec.norepeat ? `No repeat · ${g.W} stitches across` : `${g.w}-stitch repeat × ${g.n}`];
+    if (g.lead) parts.push(`${g.lead} first stitch${g.lead > 1 ? "es" : ""} (FS)`);
+    if (g.tail) parts.push(`${g.tail} last stitch${g.tail > 1 ? "es" : ""} (LS)`);
+    parts.push("2 border stitches", `${sec.rows.length} rows`);
+    $("secSum").textContent = parts.join(" · ");
+    $("motifInput").value = g.w;
+    $("motifInput").disabled = !!sec.norepeat;
+    $("noRepeat").checked = !!sec.norepeat;
+    $("fillField").hidden = !!sec.norepeat;
+    $("fillCut").setAttribute("aria-pressed", sec.fill === "cut");
+    $("fillPlain").setAttribute("aria-pressed", sec.fill === "plain");
+    $("viewRepeat").setAttribute("aria-pressed", ui.view === "repeat");
+    $("viewFull").setAttribute("aria-pressed", ui.view === "full");
+    renderSeq(sec);
+
+    const cn = $("centreNote");
+    if (g.spare % 2 === 1 && g.spare > 1) {
+      cn.hidden = false;
+      cn.textContent = `${g.spare} spare stitches can't split evenly: ${g.lead} goes before the repeats (right) and ${g.tail} after (left), so this band sits 1 stitch off-centre. Use "Odd spare stitch goes" to swap sides, or change the width by 1 to centre it.`;
+    } else cn.hidden = true;
+    $("biasField").hidden = g.spare % 2 === 0;
+    $("biasLeft").setAttribute("aria-pressed", sec.bias !== "right");
+    $("biasRight").setAttribute("aria-pressed", sec.bias === "right");
+    $("secName").value = sec.name;
+
+    $("undoBtn").disabled = !undo.length; $("redoBtn").disabled = !redo.length;
+    renderChartOnly();
+  }
+
+  function renderWholeOnly() { drawRows($("wholeCanvas"), wholeRows(), state.width, 3); }
+  function renderChartOnly() {
+    const host = $("chartWrap");
+    const firstIdx = state.arrangement.indexOf(ui.sel);
+    const chart = buildChart(ui.sel, { mode: ui.view, cell: ui.view === "full" ? Math.max(10, Math.round(ui.zoom * 0.62)) : ui.zoom, editable: true, ticks: false, withFR: firstIdx === 0 });
+    host.replaceWith(chart); chart.id = "chartWrap";
+    attachChartEvents(chart);
+  }
+
+  // ---------- Chart interaction ----------
+  let drag = null;
+  function attachChartEvents(chart) {
+    chart.addEventListener("pointerdown", e => {
+      const td = e.target.closest("td.c");
+      if (!td) return;
+      if (td.classList.contains("bs")) { notify("Border stitches (BS) are always a double crochet through both loops, so they can't take an X."); return; }
+      if (td.closest("tr.fr")) { notify("Foundation rows are plain double crochet, so they can't take an X."); return; }
+      if (td.dataset.r === undefined) return;
+      e.preventDefault();
+      const r = +td.dataset.r, i = +td.dataset.i;
+      const sec = state.sections[ui.sel], m = motifCol(sec, geo(sec), i);
+      const want = m === null ? true : !sec.rows[r].x[m];
+      drag = { want, pushed: false, last: null };
+      applyAt(r, i);
+    });
+    chart.addEventListener("pointermove", e => {
+      if (!drag) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const td = el && el.closest && el.closest("td.c");
+      if (!td || td.dataset.r === undefined) return;
+      applyAt(+td.dataset.r, +td.dataset.i);
+    });
+    chart.addEventListener("click", e => {
+      const chip = e.target.closest(".colchip");
+      if (!chip || chip.disabled) return;
+      if (chip.dataset.row !== undefined) openColourMenu(chip, +chip.dataset.row, false);
+      else if (chip.dataset.fr !== undefined) openColourMenu(chip, +chip.dataset.fr, true);
+    });
+  }
+  window.addEventListener("pointerup", () => { if (drag) { drag = null; render(); } });
+
+  function applyAt(r, i) {
+    const key = r + ":" + i; if (drag.last === key) return; drag.last = key;
+    const before = snapshot();
+    const res = tryToggle(ui.sel, r, i, drag.want);
+    if (res.err) {
+      notify(res.err, "warn");
+      if (res.cell) flashCell(res.cell[0], res.cell[1]);
+      return;
+    }
+    if (res.ok) {
+      if (!drag.pushed) { undo.push(before); redo.length = 0; drag.pushed = true; }
+      if (res.info) notify(res.info, "info");
+      renderChartOnly(); renderWholeOnly();
+    }
+  }
+  function flashCell(r, i) {
+    const td = document.querySelector(`#chartWrap td.c[data-r="${r}"][data-i="${i}"]`);
+    if (td) { td.classList.remove("flash"); void td.offsetWidth; td.classList.add("flash"); }
+  }
+
+  // ---------- Colour popover ----------
+  const pop = $("popover");
+  function openColourMenu(anchor, idx, isFR) {
+    pop.innerHTML = `<div class="ph">${isFR ? "Foundation row " + (idx + 1) : "Row " + (idx + 1)} colour</div>`;
+    state.palette.forEach((p, pi) => {
+      const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "menuitem");
+      b.innerHTML = `<span class="sw"></span><span></span>`;
+      b.querySelector(".sw").style.background = p.hex;
+      b.lastChild.textContent = `${LET[pi]} · ${p.name}`;
+      b.onclick = () => {
+        pushUndo();
+        if (isFR) state.foundation[idx] = pi; else state.sections[ui.sel].rows[idx].c = pi;
+        closePop(); render();
+      };
+      pop.appendChild(b);
+    });
+    pop.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    const left = Math.min(window.innerWidth - pop.offsetWidth - 12, r.right + 6);
+    const top = Math.min(window.innerHeight - pop.offsetHeight - 12, r.top);
+    pop.style.left = Math.max(12, left) + "px"; pop.style.top = Math.max(12, top) + "px";
+    pop.querySelector("button").focus();
+  }
+  function closePop() { pop.hidden = true; }
+  document.addEventListener("pointerdown", e => { if (!pop.hidden && !pop.contains(e.target) && !e.target.closest(".colchip")) closePop(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closePop();
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.target.matches("input")) { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); }
+  });
+
+  // ---------- Controls ----------
+  function doUndo() { if (!undo.length) return; redo.push(snapshot()); restore(undo.pop()); render(); }
+  function doRedo() { if (!redo.length) return; undo.push(snapshot()); restore(redo.pop()); render(); }
+  $("undoBtn").onclick = doUndo; $("redoBtn").onclick = doRedo;
+  $("viewRepeat").onclick = () => { ui.view = "repeat"; render(); };
+  $("viewFull").onclick = () => { ui.view = "full"; render(); };
+  $("zoomIn").onclick = () => { ui.zoom = Math.min(40, ui.zoom + 4); renderChartOnly(); };
+  $("zoomOut").onclick = () => { ui.zoom = Math.max(14, ui.zoom - 4); renderChartOnly(); };
+  $("fillCut").onclick = () => { pushUndo(); state.sections[ui.sel].fill = "cut"; render(); };
+  $("fillPlain").onclick = () => { pushUndo(); state.sections[ui.sel].fill = "plain"; render(); };
+  $("noRepeat").onchange = e => {
+    pushUndo(); const sec = state.sections[ui.sel], g = geo(sec);
+    if (e.target.checked) {
+      // keep what you see: copy the tiled motif out across the whole width
+      sec.rows.forEach(r => { r.x = Array.from({ length: g.W }, (_, i) => { const m = motifCol(sec, g, i); return m !== null && !!r.x[m]; }); });
+      sec.norepeat = true;
+      notify("This section now has no repeat. Every stitch across the width can be edited on its own.", "info");
+    } else {
+      const w = Math.min(12, g.W);
+      sec.rows.forEach(r => { r.x = r.x.slice(0, w); });
+      sec.norepeat = false; sec.w = w;
+      notify(`This section repeats again, every ${w} stitches. Change the repeat width to suit.`, "info");
+    }
+    render();
+  };
+  $("biasLeft").onclick =() => { pushUndo(); state.sections[ui.sel].bias = "left"; render(); };
+  $("biasRight").onclick = () => { pushUndo(); state.sections[ui.sel].bias = "right"; render(); };
+  $("secName").onchange = e => { const v = e.target.value.trim(); if (!v) return render(); pushUndo(); state.sections[ui.sel].name = v; render(); };
+  $("delSection").onclick = () => {
+    if (state.sections.length <= 1) return notify("A project needs at least one section.");
+    pushUndo(); const si = ui.sel, nm = state.sections[si].name;
+    state.sections.splice(si, 1);
+    state.arrangement = state.arrangement.filter(x => x !== si).map(x => x > si ? x - 1 : x);
+    if (!state.arrangement.length) state.arrangement = [0];
+    ui.sel = Math.max(0, si - 1);
+    notify(`Deleted ${nm}. Undo brings it back.`, "info"); render();
+  };
+  $("motifInput").onchange = e => {
+    const v = Math.max(2, Math.min(state.width, Math.round(+e.target.value || 2)));
+    pushUndo(); const sec = state.sections[ui.sel];
+    sec.rows.forEach(r => { r.x = Array.from({ length: v }, (_, k) => !!r.x[k]); });
+    sec.w = v; render();
+  };
+  $("widthInput").onchange = e => {
+    const v = Math.max(14, Math.min(300, Math.round(+e.target.value || 14)));
+    pushUndo(); state.width = v - 2; render();
+  };
+  $("rowAdd").onclick = () => {
+    pushUndo(); const sec = state.sections[ui.sel];
+    const top = sec.rows[sec.rows.length - 1], below = sec.rows[sec.rows.length - 2];
+    const seq = seqOf(sec);
+    sec.rows.push({ c: seq[sec.rows.length % seq.length], x: Array(geo(sec).w).fill(false) }); render();
+  };
+  $("rowDel").onclick = () => {
+    const sec = state.sections[ui.sel]; if (sec.rows.length <= 2) return notify("A section needs at least 2 rows.");
+    pushUndo(); sec.rows.pop(); render();
+  };
+  // Row colour sequence: applies straight away; single rows can still be changed with their letter chip
+  const seqOf = sec => {
+    if (!sec.seq || sec.seq.some(c => c >= state.palette.length)) sec.seq = [sec.rows[0].c, sec.rows[1] ? sec.rows[1].c : sec.rows[0].c].map(c => Math.min(c, state.palette.length - 1));
+    return sec.seq;
+  };
+  function setSeq(sec, seq) {
+    pushUndo(); sec.seq = seq;
+    sec.rows.forEach((r, k) => { r.c = seq[k % seq.length]; });
+    const names = seq.map(c => LET[c]).join(", ");
+    notify(new Set(seq).size === 1
+      ? `Every row is now colour ${LET[seq[0]]}. X's won't show until rows differ in colour.`
+      : `Rows recoloured: ${names}, repeating up the section. Undo to go back.`, "info");
+    render();
+  }
+  function renderSeq(sec) {
+    const box = $("seqBox"); box.innerHTML = "";
+    const seq = seqOf(sec);
+    seq.forEach((c, k) => {
+      if (k) { const sep = document.createElement("span"); sep.className = "hint"; sep.textContent = "then"; box.appendChild(sep); }
+      const s = document.createElement("select"); s.id = "seq-" + k; s.setAttribute("aria-label", `Colour ${k + 1} in the sequence`);
+      state.palette.forEach((p, pi) => { const o = document.createElement("option"); o.value = pi; o.textContent = `${LET[pi]} · ${p.name}`; s.appendChild(o); });
+      s.value = String(c);
+      s.onchange = () => { const n = seq.slice(); n[k] = +s.value; setSeq(sec, n); };
+      box.appendChild(s);
+    });
+    const add = document.createElement("button"); add.type = "button"; add.className = "btn small"; add.textContent = "+";
+    add.title = "Add a colour to the sequence"; add.setAttribute("aria-label", "Add a colour to the sequence");
+    add.onclick = () => { const n = seq.slice(); n.push(seq[seq.length % 2] ?? seq[0]); setSeq(sec, n); };
+    box.appendChild(add);
+    if (seq.length > 1) {
+      const rm = document.createElement("button"); rm.type = "button"; rm.className = "btn small"; rm.textContent = "−";
+      rm.title = "Remove the last colour from the sequence"; rm.setAttribute("aria-label", "Remove the last colour from the sequence");
+      rm.onclick = () => setSeq(sec, seq.slice(0, -1));
+      box.appendChild(rm);
+    }
+    const mixed = sec.rows.some((r, k) => r.c !== seq[k % seq.length]);
+    if (mixed) {
+      const h = document.createElement("span"); h.className = "hint"; h.textContent = "Some rows changed by hand. Changing the sequence resets them.";
+      box.appendChild(h);
+    }
+  }
+  $("mirrorBtn").onclick = () => {
+    pushUndo(); const sec = state.sections[ui.sel], w = geo(sec).w;
+    sec.rows.forEach(r => { for (let j = 0; j < Math.floor(w / 2); j++) r.x[w - 1 - j] = r.x[j]; });
+    notify("Mirrored: stitches " + (Math.ceil(w / 2) + 1) + "–" + w + " now copy stitches 1–" + Math.floor(w / 2) + " in reverse.", "info");
+    render();
+  };
+  $("clearBtn").onclick = () => { pushUndo(); state.sections[ui.sel].rows.forEach(r => r.x.fill(false)); render(); };
+  $("addSection").onclick = () => {
+    pushUndo(); const n = state.sections.length + 1;
+    state.sections.push({ name: "Pattern " + n, w: 8, fill: "cut", rows: Array.from({ length: 8 }, (_, k) => ({ c: k % 2, x: Array(8).fill(false) })) });
+    ui.sel = state.sections.length - 1; render();
+  };
+  // ---------- Arrangement reordering ----------
+  function moveStep(from, to) {
+    if (to < 0 || to >= state.arrangement.length || from === to) return;
+    pushUndo();
+    const [si] = state.arrangement.splice(from, 1);
+    state.arrangement.splice(to, 0, si);
+    ui.moved = to; render();
+    const b = document.querySelector(`#arrList li[data-k="${to}"] .acts button[aria-label*="${from < to ? "later" : "earlier"}"]`);
+    if (b && !b.disabled) b.focus();
+  }
+  let dragFrom = null;
+  const arrList = $("arrList");
+  const clearMarks = () => arrList.querySelectorAll(".drop-before,.drop-after").forEach(e => e.classList.remove("drop-before", "drop-after"));
+  arrList.addEventListener("dragstart", e => {
+    const li = e.target.closest(".arr-row"); if (!li) return;
+    dragFrom = +li.dataset.k; li.classList.add("dragging");
+    try { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", String(dragFrom)); } catch (_) {}
+  });
+  arrList.addEventListener("dragover", e => {
+    const li = e.target.closest(".arr-row"); if (!li || dragFrom === null) return;
+    e.preventDefault(); clearMarks();
+    const r = li.getBoundingClientRect();
+    li.classList.add(e.clientY < r.top + r.height / 2 ? "drop-before" : "drop-after");
+  });
+  arrList.addEventListener("drop", e => {
+    const li = e.target.closest(".arr-row"); if (!li || dragFrom === null) return;
+    e.preventDefault();
+    const k = +li.dataset.k, r = li.getBoundingClientRect();
+    // dropping on the upper half places it above that step on screen, i.e. later in the work
+    let to = e.clientY < r.top + r.height / 2 ? k + 1 : k;
+    if (to > dragFrom) to -= 1;
+    const from = dragFrom; dragFrom = null; clearMarks();
+    moveStep(from, to);
+  });
+  arrList.addEventListener("dragend", () => { dragFrom = null; clearMarks(); arrList.querySelectorAll(".dragging").forEach(e => e.classList.remove("dragging")); });
+
+  $("arrAdd").onclick =() => { pushUndo(); state.arrangement.push(+$("arrSelect").value); render(); };
+  $("addColour").onclick = () => {
+    if (state.palette.length >= 6) return; pushUndo();
+    const extras = [["Damson", "#6D3B5F"], ["Mustard", "#D3A12E"], ["Sky", "#7FA9C9"], ["Charcoal", "#3B3F45"], ["Rust", "#A9502F"]];
+    const used = state.palette.map(p => p.name);
+    const e = extras.find(x => !used.includes(x[0])) || ["New colour", "#888888"];
+    state.palette.push({ name: e[0], hex: e[1] });
+    const L = LET[state.palette.length - 1];
+    render();
+    notify(`Added colour ${L}. Change its shade and name in Yarn colours, then use it in the row colour sequence or on single rows.`, "info");
+  };
+  $("saveBtn").onclick = () => notify("Not built in the mock-up. The real app would save automatically and let you download a project file.", "info");
+  $("exportBtn").onclick = () => { location.hash = "#pdf"; };
+
+  // ---------- PDF preview ----------
+  function page(title, pageNo, bodyFn) {
+    const p = document.createElement("article"); p.className = "page";
+    p.innerHTML = `<div class="ph-top"><b></b><span>Overlay mosaic · UK terms</span></div><h3></h3><div class="pbody"></div><div class="foot"><span>Designed with Mosaic Chart Designer</span><span>Page ${pageNo}</span></div>`;
+    p.querySelector("b").textContent = state.name; p.querySelector("h3").textContent = title;
+    bodyFn(p.querySelector(".pbody"));
+    return p;
+  }
+  function renderPdf() {
+    const host = $("pages"); host.innerHTML = "";
+    let no = 1;
+    host.appendChild(page("Full design image", no++, b => {
+      const c = document.createElement("canvas"); c.className = "design";
+      const rows = wholeRows(); drawRows(c, rows, state.width, 4);
+      b.appendChild(c);
+      const h = document.createElement("h4"); h.textContent = "Colour key"; b.appendChild(h);
+      const k = document.createElement("div"); k.className = "key";
+      state.palette.forEach((p, pi) => {
+        const d = document.createElement("div");
+        d.innerHTML = `<span class="sw"></span><span></span>`;
+        d.querySelector(".sw").style.background = p.hex; d.querySelector(".sw").style.color = inkFor(p.hex); d.querySelector(".sw").textContent = LET[pi];
+        d.lastChild.textContent = `Colour ${LET[pi]}: ${p.name}`; k.appendChild(d);
+      });
+      b.appendChild(k);
+      const info = document.createElement("p");
+      info.textContent = `${state.width + 2} stitches wide (including 2 border stitches) × ${rows.length} rows.`;
+      b.appendChild(info);
+    }));
+
+    host.appendChild(page("How to read the charts", no++, b => {
+      const lg = document.createElement("div"); lg.className = "legend";
+      const items = [
+        ["BS", "Border stitch: double crochet through both loops", "background:#9DC3E6"],
+        ["X", "Treble crochet in the front loop of the stitch two rows below", ""],
+        ["", "Double crochet in the back loop of the stitch in the row below", ""],
+        ["FR", "Foundation rows: worked once at the start of the project", ""],
+        ["FS", "First stitch(es): worked before the repeats begin", ""],
+        ["LS", "Last stitch(es): worked after the repeats, before the final border stitch", ""],
+        ["", "Repeat this section the number of times shown", "border:2.5px solid #D2302A"],
+        ["✓", "Tick the box when you finish the row", ""],
+      ];
+      items.forEach(([s, t, st]) => { const a = document.createElement("div"); a.className = "sym"; a.textContent = s; if (st) a.style.cssText = st; const d = document.createElement("div"); d.textContent = t; lg.append(a, d); });
+      b.appendChild(lg);
+      const p = document.createElement("p"); p.textContent = "Work every row on the front, starting at the right-hand edge. Use one colour per row, and fasten off at the end of each row."; b.appendChild(p);
+      const h = document.createElement("h4"); h.textContent = "Starting out"; b.appendChild(h);
+      const s = document.createElement("div"); s.className = "start";
+      const f1 = state.foundation[0];
+      const lines = [`Foundation chain: in colour ${LET[f1]}, chain ${state.width + 3}.`,
+       `FR1 (colour ${LET[f1]}): double crochet in the 2nd chain from the hook and in each chain along (${state.width + 2} stitches). Fasten off.`];
+      state.foundation.slice(1).forEach((c, k) => lines.push(`FR${k + 2} (colour ${LET[c]}): BS, double crochet in the back loop of each stitch until 1 stitch remains, BS. Fasten off.`));
+      lines.forEach(t => { const d = document.createElement("div"); d.textContent = t; s.appendChild(d); });
+      b.appendChild(s);
+    }));
+
+    host.appendChild(page("Section checklist", no++, b => {
+      const p = document.createElement("p"); p.textContent = "Work the sections in this order. Tick each one off when it's done, so you know where you are when sections repeat."; b.appendChild(p);
+      const t = document.createElement("table"); t.className = "checklist";
+      state.arrangement.forEach((si, k) => {
+        const tr = t.insertRow();
+        const a = tr.insertCell(); a.className = "n"; a.textContent = k + 1;
+        const nm = tr.insertCell(); nm.textContent = state.sections[si].name + `  (${state.sections[si].rows.length} rows)`;
+        const tk = tr.insertCell(); tk.className = "tk";
+        const bt = document.createElement("button"); bt.type = "button"; bt.className = "tick"; bt.setAttribute("role", "checkbox");
+        const key = "arr:" + k; bt.setAttribute("aria-checked", ui.ticks[key] ? "true" : "false"); bt.setAttribute("aria-label", `Step ${k + 1} done`);
+        bt.onclick = () => { ui.ticks[key] = !ui.ticks[key]; bt.setAttribute("aria-checked", ui.ticks[key] ? "true" : "false"); };
+        tk.appendChild(bt);
+      });
+      b.appendChild(t);
+      const total = wholeRows().length;
+      const q = document.createElement("p"); q.textContent = `Total: ${total} rows including ${state.foundation.length} foundation rows.`; b.appendChild(q);
+    }));
+
+    const seen = [];
+    state.arrangement.forEach(si => { if (!seen.includes(si)) seen.push(si); });
+    seen.forEach((si, k) => {
+      const sec = state.sections[si], g = geo(sec);
+      host.appendChild(page(`${sec.name}: chart`, no++, b => {
+        const cols = 1 + g.tail + g.w + g.lead + 1 + 5;
+        const cell = Math.max(8, Math.min(24, Math.floor(540 / cols)));
+        const w = document.createElement("div"); w.className = "pchart-wrap";
+        w.appendChild(buildChart(si, { mode: "repeat", cell, editable: false, ticks: true, withFR: k === 0 }));
+        b.appendChild(w);
+        const notes = [];
+        if (k === 0) notes.push(`Foundation rows ${state.foundation.map((_, j) => "FR" + (j + 1)).join(", ").replace(/, ([^,]*)$/, " and $1")} are only worked once, at the start of the project.`);
+        if (g.lead || g.tail) notes.push(`Work ${g.lead ? g.lead + " first stitch" + (g.lead > 1 ? "es" : "") + " (FS) before the repeats and " : ""}${g.tail} last stitch${g.tail > 1 ? "es" : ""} (LS) after them.`);
+        notes.forEach(t => { const n = document.createElement("p"); n.className = "note"; n.textContent = t; b.appendChild(n); });
+      }));
+    });
+  }
+
+  // ---------- Routing ----------
+  function render() {
+    const v = location.hash === "#pdf" ? "pdf" : "editor";
+    $("editorView").hidden = v !== "editor"; $("pdfView").hidden = v !== "pdf";
+    $("tabEditor").toggleAttribute("aria-current", v === "editor"); if (v === "editor") $("tabEditor").setAttribute("aria-current", "page");
+    $("tabPdf").toggleAttribute("aria-current", v === "pdf"); if (v === "pdf") $("tabPdf").setAttribute("aria-current", "page");
+    renderProjSelect();
+    if (v === "editor") renderEditor(); else renderPdf();
+  }
+  // ---------- Projects ----------
+  function renderProjSelect() {
+    const s = $("projSelect"); s.innerHTML = "";
+    projects.forEach((p, k) => { const o = document.createElement("option"); o.value = k; o.textContent = p.name; s.appendChild(o); });
+    s.value = String(cur);
+  }
+  function switchTo(k) {
+    cur = k; state = projects[k]; state.ticks = state.ticks || {}; ui.ticks = state.ticks;
+    ui.sel = 0; undo.length = 0; redo.length = 0; $("notice").hidden = true;
+    render();
+  }
+  $("projSelect").onchange = e => switchTo(+e.target.value);
+
+  const dlg = $("newDlg");
+  const num = (id, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+$(id).value || lo)));
+  let npMode = "total";
+  function setNpMode(m) {
+    npMode = m;
+    $("npModeTotal").setAttribute("aria-pressed", m === "total");
+    $("npModeRep").setAttribute("aria-pressed", m === "rep");
+    $("npTotalBox").hidden = m !== "total"; $("npRepBox").hidden = m !== "rep";
+    updateNewSum();
+  }
+  $("npModeTotal").onclick = () => setNpMode("total");
+  $("npModeRep").onclick = () => setNpMode("rep");
+  function readNew() {
+    const rows = num("npRows", 2, 200), first = +$("npFirst").value, fr = +$("npFR").value;
+    const foundation = Array.from({ length: fr }, (_, k) => ((fr - 1 - k) % 2 === 0) ? 1 - first : first);
+    const base = { rows, first, fr, foundation, mode: npMode };
+    if (npMode === "total") {
+      const width = num("npTotal", 14, 300) - 2;
+      if ($("npStart").value === "free") return { ...base, width, w: width, n: 1, x: 0, norepeat: true };
+      const w = Math.min(width, num("npTRep", 2, 60)), n = Math.floor(width / w);
+      return { ...base, width, w, n, x: width - n * w, norepeat: false };
+    }
+    const w = num("npW", 2, 60), n = num("npN", 1, 40), x = num("npX", 0, 40);
+    return { ...base, w, n, x, width: w * n + x, norepeat: false };
+  }
+  function updateNewSum() {
+    $("npTRepField").hidden = $("npStart").value !== "rep";
+    const v = readNew();
+    const L = Math.floor(v.x / 2), R = v.x - L;
+    const spareLine = v.x ? `Spare stitches: ${L ? L + " first (FS) and " : ""}${R} last (LS).${v.x % 2 ? " You can swap the odd one to the other side later." : ""}` : "No spare stitches: the repeats fill the width exactly.";
+    const lines = [];
+    if (v.mode === "total") {
+      lines.push(`${v.width + 2} stitches per row: ${v.width} to design with, plus 2 border stitches. Foundation chain: ${v.width + 3}.`);
+      if (v.norepeat) lines.push("Pattern 1 has no repeat: you draw across the whole width. You can add repeating sections later.");
+      else lines.push(`A ${v.w}-stitch repeat fits ${v.n} times. ${spareLine}`);
+    } else {
+      lines.push(`${v.w} × ${v.n} + ${v.x} spare = ${v.width} stitches between borders, ${v.width + 2} per row with the border stitches.`, `Foundation chain: ${v.width + 3}.`, spareLine);
+    }
+    lines.push(`Rows: ${v.foundation.map((c, j) => "FR" + (j + 1) + " " + LET[c]).join(", ")}, then row 1 in ${LET[v.first]}, alternating.`);
+    const el = $("npSum"); el.innerHTML = "";
+    lines.forEach(t => { const d = document.createElement("div"); d.textContent = t; el.appendChild(d); });
+  }
+  function openNew() {
+    $("npName").value = "My mosaic project " + projects.length;
+    dlg.hidden = false; setNpMode(npMode); $("npName").focus(); $("npName").select();
+  }
+  function closeNew() { dlg.hidden = true; $("newProjBtn").focus(); }
+  $("newProjBtn").onclick = openNew;
+  $("npCancel").onclick = closeNew;
+  dlg.addEventListener("pointerdown", e => { if (e.target === dlg) closeNew(); });
+  dlg.addEventListener("keydown", e => { if (e.key === "Escape") { e.stopPropagation(); closeNew(); } });
+  $("newForm").addEventListener("input", updateNewSum);
+  $("newForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const v = readNew();
+    const p = {
+      name: $("npName").value.trim() || "Untitled project",
+      width: v.width,
+      palette: [
+        { name: $("npNameA").value.trim() || "Colour A", hex: $("npHexA").value },
+        { name: $("npNameB").value.trim() || "Colour B", hex: $("npHexB").value },
+      ],
+      foundation: v.foundation,
+      sections: [{ name: "Pattern 1", w: v.w, norepeat: v.norepeat, fill: "cut", bias: "left", rows: Array.from({ length: v.rows }, (_, k) => ({ c: k % 2 ? 1 - v.first : v.first, x: Array(v.w).fill(false) })) }],
+      arrangement: [0],
+      ticks: {},
+    };
+    projects.push(p); dlg.hidden = true;
+    try { history.replaceState(null, "", "#editor"); } catch (_) {}
+    switchTo(projects.length - 1);
+    notify(`Created ${p.name}. Every row is plain so far: click cells to add X's. The example is still in the project menu.`, "info");
+  });
+
+  window.addEventListener("hashchange", render);
+  const go =h => e => { e.preventDefault(); try { history.replaceState(null, "", h); } catch (_) {} if (location.hash !== h) { try { location.hash = h; } catch (_) {} } render(); window.scrollTo(0, 0); };
+  $("tabEditor").onclick = go("#editor"); $("tabPdf").onclick = go("#pdf");
+  $("exportBtn").onclick = go("#pdf");
+  render();
+})();
+</script>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mosaic Chart Designer</title>
+    <style>
+      :root { --bg: #f3f5f3; --ink: #1d2421; --muted: #5b6661; color-scheme: light dark; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #141816; --ink: #e6ebe8; --muted: #9da8a2; } }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+      main { max-width: 640px; margin: 0 auto; padding: 48px 16px; display: flex; flex-direction: column; gap: 16px; }
+      h1 { margin: 0; font-size: 26px; }
+      p { margin: 0; color: var(--muted); }
+      canvas { image-rendering: pixelated; width: 100%; max-width: 450px; height: auto; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Mosaic Chart Designer</h1>
+      <p>Coming soon: a tool for designing overlay mosaic crochet charts. Below is the example design, drawn by the app's mosaic rules.</p>
+      <canvas id="preview" aria-label="Example mosaic design"></canvas>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

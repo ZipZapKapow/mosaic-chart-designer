@@ -1,0 +1,70 @@
+# Mosaic Chart Designer — Design
+
+A browser app for designing **overlay mosaic crochet** charts and exporting them as PDFs to work from on a tablet. UK terms throughout.
+
+## Stitch rules
+
+| Chart | Stitch |
+|---|---|
+| Blank | DC in the back loop of the stitch below |
+| X | TR in the front loop of the stitch two rows below |
+| BS | Border stitch: DC through both loops, first and last stitch of every row |
+| FS / LS | First / last stitches: spare stitches before / after the repeats |
+| FR | Foundation rows: plain, worked once at the start |
+
+- One colour per row; every row worked on the right side, from right to left.
+- An X in row *r* makes the stitch below (row *r−1*) show row *r*'s colour.
+- Blocked, with a reason: an X directly above another X, an X on a BS column, an X on a foundation row.
+- Checked across the whole design, including where sections meet.
+
+## Project structure
+
+- **Project:** stitches per row (including the 2 BS), colour palette, foundation rows.
+- **Sections:** each has a row colour sequence (e.g. A, B or A, B, A, C) and either:
+  - a **repeat**, tiled across the width, with spare stitches centred (continue the motif or plain fill; a toggle sets which side gets an odd spare stitch), or
+  - **no repeat**: drawn across the whole width (pictures, logos).
+- **Arrangement:** the order sections are worked in; sections can be reused. Shown bottom-up like the fabric, reorderable by drag or ↑ / ↓.
+- Row numbers restart in each section.
+
+## Editor
+
+- New project form: width as total stitches (default) or repeat × count + spare.
+- Click or drag to add/remove X's; the colour drop shows immediately.
+- Per-row colour override; repeat view and full-width view; mirror; undo/redo; zoom.
+- Whole-design preview updates live.
+
+## Picture tools
+
+One engine turns a target picture into X's:
+
+- Works row by row; a stitch can only show a different colour by taking the colour of the row above.
+- Shapes must start and end on a row of their own colour. Auto-fix nudges edges by one row (thin or thicken); stitches that still can't be made are shown in red.
+- **Image import:** PNG/JPG/WebP (no vectors needed); fit to width; optional 90° turn; threshold to the palette; *fill letter bodies* for outline-style lettering.
+- **Duplicate flipped:** an upside-down copy of a section, recalculated with the same engine (X's only drop downwards, so reversing rows isn't enough).
+- Later: paint mode (paint the colours, the app places the X's).
+
+## Saving
+
+- Autosave in the browser; download/open project files. Designs never go into the repo.
+
+## PDF
+
+- Full design image, colour key, legend, starting instructions.
+- Section checklist (top-down, with tick boxes).
+- One chart per section: red repeat box, stitch numbers along the top and bottom, row numbers on both sides, colour letter and tick box on the right.
+- Tall sections split across pages, with a few rows of overlap.
+- Tick boxes tappable as well as markable by hand. Written instructions: optional.
+
+## Build order
+
+1. Project set-up; mosaic rules with tests
+2. Editor and saving
+3. Picture engine and Duplicate flipped
+4. Image import
+5. PDF export
+
+## Technical
+
+- Static web app (Vite + JavaScript/TypeScript, Vitest for rule tests); hosted on GitHub Pages.
+- No server or accounts. PDF generated in the browser.
+- `mockup/` holds the clickable design mock-up.

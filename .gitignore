@@ -1,0 +1,51 @@
+# Build output and dependencies
+node_modules/
+dist/
+coverage/
+*.log
+
+# OS and editor files
+.DS_Store
+.claude/
+.vscode/
+.idea/
+
+# Secrets
+.env
+.env.*
+
+# ---- Private material must never be committed ----
+# Keep reference patterns, sketches, logos and designs in ~/Mosaic_private, outside this repo.
+# These rules are a back-up in case something is dropped in here by mistake.
+
+# Documents
+*.pdf
+*.doc
+*.docx
+*.pages
+
+# Images and photos (app icons, if ever needed, go in public/icons/ and are allowed below)
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.heic
+*.HEIC
+*.heif
+*.gif
+*.avif
+*.tif
+*.tiff
+*.bmp
+*.svg
+!public/icons/*.png
+!public/icons/*.svg
+
+# Saved mosaic projects and exports
+*.mosaic.json
+*.mosaic
+
+# Folders that sound private
+private/
+Mosaic_private/
+logo-tests/
