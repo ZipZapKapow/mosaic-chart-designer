@@ -42,6 +42,25 @@ export function removeTopRow(section: Section): Section {
   return { ...section, rows: section.rows.slice(0, -1) };
 }
 
+/**
+ * Add a plain row at the bottom, moving every row up one. Existing rows keep their
+ * colours: the sequence is turned round one place, so the new row 1 is the colour
+ * that comes before the old row 1.
+ */
+export function addRowAtBottom(section: Section, width: number): Section {
+  if (section.rows.length >= MAX_ROWS) return section;
+  const seq = section.colourSequence;
+  const colourSequence = [seq[seq.length - 1]!, ...seq.slice(0, -1)];
+  return { ...section, colourSequence, rows: [blankRow(colourSequence[0]!, columnsOf(section, width)), ...section.rows] };
+}
+
+/** Remove the bottom row, moving every row down one. Sections keep at least two rows. */
+export function removeBottomRow(section: Section): Section {
+  if (section.rows.length <= MIN_ROWS) return section;
+  const seq = section.colourSequence;
+  return { ...section, colourSequence: [...seq.slice(1), seq[0]!], rows: section.rows.slice(1) };
+}
+
 export function newSection(id: string, name: string, opts: {
   rows: number;
   width: number;

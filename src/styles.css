@@ -130,6 +130,8 @@ p { margin: 0; }
 .seg button + button { border-left: 1px solid var(--line); }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
 .inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.row-btns { display: inline-flex; gap: 3px; align-items: center; }
+.row-btns .hint { margin-right: 2px; }
 .chk { display: inline-flex; gap: 5px; align-items: center; font-size: 13px; cursor: pointer; font-weight: 500; }
 .chk input { accent-color: var(--accent); width: 15px; height: 15px; }
 

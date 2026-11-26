@@ -2,6 +2,7 @@ import {
   addColour,
   addFlippedCopy,
   addPictureSection,
+  addRowAtBottom,
   addRowOnTop,
   addSection,
   addStep,
@@ -24,6 +25,7 @@ import {
   moveStep,
   parseProject,
   removeStep,
+  removeBottomRow,
   removeTopRow,
   replaceSection,
   sectionStack,
@@ -455,6 +457,20 @@ export function startEditor() {
     const s = current();
     if (s.rows.length <= 2) return notify("A section needs at least 2 rows.");
     updateSection(removeTopRow(s));
+  });
+  $("rowAddBottom").addEventListener("click", () => {
+    const s = current();
+    const next = addRowAtBottom(s, width());
+    if (next === s) return notify("A section can have at most 2000 rows.");
+    updateSection(next);
+    // Row 1's X's used to reach down into the section below; now they land on the new row.
+    if (s.rows[0]!.x.some(Boolean))
+      notify("Added a plain row at the bottom and moved the pattern up. The X's that were in row 1 now drop onto the new row, so it isn't completely plain.", "info");
+  });
+  $("rowDelBottom").addEventListener("click", () => {
+    const s = current();
+    if (s.rows.length <= 2) return notify("A section needs at least 2 rows.");
+    updateSection(removeBottomRow(s));
   });
 
   // ---------- Toolbar ----------

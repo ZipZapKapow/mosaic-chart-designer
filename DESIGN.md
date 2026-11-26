@@ -30,6 +30,7 @@ A browser app for designing **overlay mosaic crochet** charts and exporting them
 
 - New project form: width as total stitches (default) or repeat × count + spare.
 - Click or drag to add/remove X's; the colour drop shows immediately.
+- Rows added or removed at the top, or at the bottom (moving the whole pattern up or down a row, with each row keeping its colour).
 - Per-row colour override; repeat view and full-width view; mirror; undo/redo; zoom.
 - Whole-design preview updates live.
 

@@ -88,7 +88,7 @@
             </div>
           </div>
           <div class="field"><label for="rowsInput">Rows</label>
-            <div class="inline"><input type="number" id="rowsInput" min="2" max="2000" /><button class="btn small" id="rowAdd" type="button" title="Add a plain row on top">+ Row</button><button class="btn small" id="rowDel" type="button" title="Remove the top row">− Row</button></div>
+            <div class="inline"><input type="number" id="rowsInput" min="2" max="2000" /><span class="row-btns" role="group" aria-label="Rows on top"><span class="hint">Top</span><button class="btn small" id="rowAdd" type="button" title="Add a plain row on top" aria-label="Add a plain row on top">+</button><button class="btn small" id="rowDel" type="button" title="Remove the top row" aria-label="Remove the top row">−</button></span><span class="row-btns" role="group" aria-label="Rows at the bottom"><span class="hint">Bottom</span><button class="btn small" id="rowAddBottom" type="button" title="Add a plain row at the bottom, moving the whole pattern up a row" aria-label="Add a plain row at the bottom">+</button><button class="btn small" id="rowDelBottom" type="button" title="Remove the bottom row, moving the whole pattern down a row" aria-label="Remove the bottom row">−</button></span></div>
           </div>
           <div class="field"><span class="lbl">Row colour sequence</span>
             <div class="inline" id="seqBox"></div>

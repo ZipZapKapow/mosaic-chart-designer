@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  addRowAtBottom,
   addRowOnTop,
   applySequence,
   colourGrid,
@@ -14,6 +15,7 @@ import {
   mirrorRightToLeft,
   motifColumn,
   newSection,
+  removeBottomRow,
   removeTopRow,
   sectionStack,
   setX,
@@ -272,5 +274,41 @@ describe("section editing", () => {
   it("mirroring leaves the middle stitch of an odd width alone", () => {
     const s = mustSet(blank(3, 5, 10), 10, 1, 2);
     expect(mirrorRightToLeft(s).rows[1]!.x).toEqual([false, false, true, false, false]);
+  });
+});
+
+describe("adding and removing rows at the bottom", () => {
+  const p = exampleProject();
+  const width = designWidth(p);
+
+  it("moves the pattern up a row, keeping every row's colour and X's and the look", () => {
+    for (const s of p.sections) {
+      const up = addRowAtBottom(s, width);
+      expect(up.rows.length).toBe(s.rows.length + 1);
+      expect(up.rows[0]!.x.every((v) => !v)).toBe(true);
+      expect(up.rows.slice(1)).toEqual(s.rows);
+      expect(hasRowOverrides(up)).toBe(hasRowOverrides(s));
+      const before = colourGrid(p, sectionStack(p, s));
+      const after = colourGrid(p, sectionStack(p, up));
+      expect(after.slice(1)).toEqual(before);
+    }
+  });
+
+  it("works with longer colour sequences", () => {
+    const s = newSection("s", "S", { rows: 5, width, repeatWidth: 4, sequence: [A, B, A, 2] });
+    const up = addRowAtBottom(s, width);
+    expect(up.colourSequence).toEqual([2, A, B, A]);
+    expect(up.rows.map((r) => r.colour)).toEqual([2, A, B, A, 2, A]);
+    expect(hasRowOverrides(up)).toBe(false);
+    expect(removeBottomRow(up)).toEqual(s);
+  });
+
+  it("removes the bottom row, keeping at least two rows", () => {
+    const s = p.sections[0]!;
+    const down = removeBottomRow(s);
+    expect(down.rows).toEqual(s.rows.slice(1));
+    expect(hasRowOverrides(down)).toBe(hasRowOverrides(s));
+    const two = newSection("t", "T", { rows: 2, width, repeatWidth: 4, sequence: [A, B] });
+    expect(removeBottomRow(two)).toBe(two);
   });
 });
